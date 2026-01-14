@@ -90,12 +90,13 @@ namespace IngameScript
 
         #endregion
 
-        #region 性能统计
+        #region 性能统计和日志
 
         private double _总运行时间ms;
         private double _最大运行时间ms;
         private int _运行次数;
         private StringBuilder _状态信息;
+        private string _初始化错误信息;
 
         #endregion
 
@@ -184,29 +185,20 @@ namespace IngameScript
         /// </summary>
         private void 执行初始化()
         {
-            Echo("正在初始化火控系统...");
-
             // 阶段1：获取主控制器
             if (_主控制器 == null)
             {
                 _主控制器 = 获取主控制器();
-                if (_主控制器 == null)
-                {
-                    Echo("警告: 未找到驾驶舱，部分功能受限");
-                }
-                else
-                {
-                    Echo($"找到主控制器: {_主控制器.CustomName}");
-                }
             }
 
             // 阶段2：初始化AI目标获取器
             if (_目标获取器 == null)
             {
-                _目标获取器 = new AI目标获取器(GridTerminalSystem, _参数管理器, Echo);
+                _目标获取器 = new AI目标获取器(GridTerminalSystem, _参数管理器, null);
                 if (!_目标获取器.初始化())
                 {
-                    Echo("错误: AI目标获取器初始化失败");
+                    _初始化错误信息 = "AI目标获取器初始化失败";
+                    显示初始化状态();
                     return;
                 }
             }
@@ -214,10 +206,11 @@ namespace IngameScript
             // 阶段3：初始化炮塔管理器
             if (_炮塔管理器 == null)
             {
-                _炮塔管理器 = new 炮塔管理器(GridTerminalSystem, _参数管理器, Echo);
+                _炮塔管理器 = new 炮塔管理器(GridTerminalSystem, _参数管理器, null);
                 if (!_炮塔管理器.刷新炮塔列表(_帧计数))
                 {
-                    Echo("错误: 未找到可用炮塔");
+                    _初始化错误信息 = "未找到可用炮塔";
+                    显示初始化状态();
                     return;
                 }
             }
@@ -225,23 +218,20 @@ namespace IngameScript
             // 阶段4：初始化火控计算器
             if (_火控计算器 == null)
             {
-                _火控计算器 = new 火控计算器(_参数管理器, _目标跟踪器, Echo);
+                _火控计算器 = new 火控计算器(_参数管理器, _目标跟踪器);
             }
 
             // 阶段5：初始化射击控制器
             if (_射击控制器 == null)
             {
-                _射击控制器 = new 射击控制器(_参数管理器, _炮塔管理器, Echo);
+                _射击控制器 = new 射击控制器(_参数管理器, _炮塔管理器);
                 _射击控制器.初始化();
             }
 
             // 初始化完成
             _已初始化 = true;
             _当前状态 = 火控状态.待机;
-            Echo("火控系统初始化完成！");
-            Echo($"炮塔数量: {_炮塔管理器.炮塔总数}");
-            Echo($"聚类组数: {_炮塔管理器.聚类组总数}");
-            Echo($"火炮类数: {_炮塔管理器.火炮类数量}");
+            _初始化错误信息 = null;
         }
 
         /// <summary>
@@ -399,11 +389,6 @@ namespace IngameScript
         /// </summary>
         private void 执行聚类组火控计算(Vector3D 舰船速度, Vector3D 重力向量)
         {
-            // TODO: 实现聚类组火控计算
-            // 遍历所有聚类组
-            // 对每个组的代表炮塔计算瞄准点
-            // 缓存计算结果供组内其他炮塔使用
-
             foreach (var 聚类组 in _炮塔管理器.获取所有聚类组())
             {
                 // 获取代表炮塔
@@ -416,19 +401,20 @@ namespace IngameScript
                 double 弹速 = 代表.静态信息.弹速;
                 bool 受重力影响 = 代表.静态信息.受重力影响;
 
-                // 计算瞄准点
-                // TODO: 调用火控计算器计算瞄准点
-                // Vector3D 瞄准点 = _火控计算器.计算瞄准点(炮塔位置, 弹速, 受重力影响, 舰船速度, 重力向量);
+                // 调用火控计算器计算瞄准点
+                Vector3D 瞄准点 = _火控计算器.计算瞄准点(
+                    炮塔位置,
+                    弹速,
+                    受重力影响,
+                    舰船速度,
+                    重力向量);
 
-                // 暂时使用目标位置作为瞄准点（待实现完整计算）
-                Vector3D 瞄准点 = _当前目标位置;
-
-                // 缓存结果
+                // 缓存结果供组内其他炮塔使用
                 聚类组.缓存瞄准点 = 瞄准点;
                 聚类组.缓存有效 = true;
                 聚类组.上次计算帧 = _帧计数;
 
-                // 更新全局瞄准点缓存
+                // 更新全局瞄准点缓存（供射击控制器使用）
                 _当前瞄准点 = 瞄准点;
             }
         }
@@ -455,23 +441,16 @@ namespace IngameScript
                 case "刷新":
                     _炮塔管理器?.刷新炮塔列表(_帧计数);
                     _射击控制器?.初始化();
-                    Echo("已刷新炮塔列表");
                     break;
 
                 case "toggle":
                 case "切换":
                     _参数管理器.火炮类使用轮射 = !_参数管理器.火炮类使用轮射;
-                    Echo($"火炮射击模式: {(_参数管理器.火炮类使用轮射 ? "轮射" : "齐射")}");
                     break;
 
                 case "status":
                 case "状态":
-                    显示详细状态();
-                    break;
-
-                default:
-                    Echo($"未知命令: {命令}");
-                    Echo("可用命令: 重置, 刷新, 切换, 状态");
+                    // 状态会在下一帧的显示状态信息中展示
                     break;
             }
         }
@@ -487,11 +466,17 @@ namespace IngameScript
             _射击控制器?.重置();
             _目标跟踪器?.ClearHistory();
             _炮塔管理器?.使所有缓存失效();
+            _初始化错误信息 = null;
+
+            // 重置组件引用，下次主循环会重新初始化
+            _目标获取器 = null;
+            _炮塔管理器 = null;
+            _火控计算器 = null;
+            _射击控制器 = null;
+            _主控制器 = null;
 
             // 重新加载参数
             _参数管理器 = new 参数管理器(Me);
-
-            Echo("系统已重置");
         }
 
         #endregion
@@ -499,62 +484,70 @@ namespace IngameScript
         #region 状态显示
 
         /// <summary>
-        /// 显示状态信息
+        /// 显示初始化状态（初始化阶段调用）
         /// </summary>
-        private void 显示状态信息()
+        private void 显示初始化状态()
         {
             _状态信息.Clear();
             _状态信息.AppendLine($"=== {系统名称} v{版本号} ===");
-            _状态信息.AppendLine($"状态: {_当前状态}");
+            _状态信息.AppendLine("状态: 初始化中...");
 
-            if (_已初始化)
+            if (!string.IsNullOrEmpty(_初始化错误信息))
             {
-                _状态信息.AppendLine($"炮塔: {_炮塔管理器?.炮塔总数 ?? 0}个");
-                _状态信息.AppendLine($"聚类组: {_炮塔管理器?.聚类组总数 ?? 0}个");
-                _状态信息.AppendLine($"火炮类: {_炮塔管理器?.火炮类数量 ?? 0}门");
-                _状态信息.AppendLine($"射击模式: {(_参数管理器.火炮类使用轮射 ? "轮射" : "齐射")}");
-
-                if (_目标获取器?.存在有效目标 == true)
-                {
-                    double 距离 = (_当前目标位置 - (_主控制器?.GetPosition() ?? Vector3D.Zero)).Length();
-                    _状态信息.AppendLine($"目标距离: {距离:F0}m");
-                    _状态信息.AppendLine($"跟踪历史: {_目标跟踪器?.GetHistoryCount() ?? 0}");
-                    _状态信息.AppendLine($"预测误差: {_目标跟踪器?.combinationError:F2}m/s");
-                }
-                else
-                {
-                    _状态信息.AppendLine("无目标");
-                }
+                _状态信息.AppendLine($"错误: {_初始化错误信息}");
             }
-
-            // 性能统计
-            _状态信息.AppendLine("--- 性能 ---");
-            _状态信息.AppendLine($"平均: {(_运行次数 > 0 ? _总运行时间ms / _运行次数 : 0):F3}ms");
-            _状态信息.AppendLine($"最大: {_最大运行时间ms:F3}ms");
-            _状态信息.AppendLine($"指令: {Runtime.CurrentInstructionCount}/{Runtime.MaxInstructionCount}");
 
             Echo(_状态信息.ToString());
         }
 
         /// <summary>
-        /// 显示详细状态（命令触发）
+        /// 显示状态信息（每帧调用，持久化刷新）
         /// </summary>
-        private void 显示详细状态()
+        private void 显示状态信息()
         {
-            Echo("=== 详细状态 ===");
-            Echo($"帧计数: {_帧计数}");
-            Echo($"更新跳帧: {_参数管理器.火控更新跳帧}");
-            Echo($"聚类距离: {_参数管理器.聚类距离}m");
-            Echo($"迭代次数: {_参数管理器.弹道迭代次数}");
+            _状态信息.Clear();
+            _状态信息.AppendLine($"=== {系统名称} v{版本号} ===");
 
-            if (_炮塔管理器 != null)
+            if (!_已初始化)
             {
-                Echo("--- 炮塔分布 ---");
-                foreach (var 聚类组 in _炮塔管理器.获取所有聚类组())
+                _状态信息.AppendLine("状态: 初始化中...");
+                if (!string.IsNullOrEmpty(_初始化错误信息))
                 {
-                    Echo($"{聚类组.分组键}: {聚类组.炮塔列表.Count}门");
+                    _状态信息.AppendLine($"错误: {_初始化错误信息}");
+                }
+                Echo(_状态信息.ToString());
+                return;
+            }
+
+            // 基础状态
+            _状态信息.AppendLine($"状态: {_当前状态} | 跳帧: {_参数管理器.火控更新跳帧}");
+            _状态信息.AppendLine($"炮塔: {_炮塔管理器?.炮塔总数 ?? 0} | 聚类: {_炮塔管理器?.聚类组总数 ?? 0} | 火炮: {_炮塔管理器?.火炮类数量 ?? 0}");
+            _状态信息.AppendLine($"模式: {(_参数管理器.火炮类使用轮射 ? "轮射" : "齐射")}");
+
+            // 目标信息
+            if (_目标获取器?.存在有效目标 == true)
+            {
+                double 距离 = (_当前目标位置 - (_主控制器?.GetPosition() ?? Vector3D.Zero)).Length();
+                _状态信息.AppendLine($"目标距离: {距离:F0}m");
+                _状态信息.AppendLine($"历史: {_目标跟踪器?.GetHistoryCount() ?? 0} | 误差: {_目标跟踪器?.combinationError:F2}m/s");
+                
+                // 显示轮射状态
+                if (_参数管理器.火炮类使用轮射 && _射击控制器 != null)
+                {
+                    _状态信息.AppendLine($"轮射索引: {_射击控制器.当前轮射索引}");
                 }
             }
+            else
+            {
+                _状态信息.AppendLine("无目标");
+            }
+
+            // 性能统计（简化显示）
+            double 平均时间 = _运行次数 > 0 ? _总运行时间ms / _运行次数 : 0;
+            _状态信息.AppendLine($"性能: {平均时间:F2}ms(avg) {_最大运行时间ms:F2}ms(max)");
+            _状态信息.AppendLine($"指令: {Runtime.CurrentInstructionCount}/{Runtime.MaxInstructionCount}");
+
+            Echo(_状态信息.ToString());
         }
 
         /// <summary>
