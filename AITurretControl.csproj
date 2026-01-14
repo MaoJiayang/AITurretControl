@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>IngameScript</RootNamespace>
+    <LangVersion>6</LangVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Configurations>Release;Debug</Configurations>
+    <Platforms>x64</Platforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Mal.Mdk2.PbAnalyzers" Version="2.1.14">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Mal.Mdk2.PbPackager" Version="2.1.10">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Mal.Mdk2.References" Version="2.2.6" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Instructions.readme" />
+    <AdditionalFiles Include="Instructions.readme" />
+    <AdditionalFiles Include="thumb.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 排除 `参考代码` 文件夹中的源码文件，防止与主代码发生二义性 -->
+    <Compile Remove="参考代码\**\*.cs" />
+    <!-- 仍以非编译项保留这些文件，便于查看与参考 -->
+    <None Include="参考代码\**\*.cs" />
+  </ItemGroup>
+</Project>
