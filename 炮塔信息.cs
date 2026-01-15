@@ -7,56 +7,83 @@ using VRageMath;
 namespace IngameScript
 {
     /// <summary>
-    /// 弹药类型枚举 - 按弹速和射程分组
+    /// 弹药类型 - 自带弹道属性的弹药类型定义
+    /// 同一种弹药类型具有相同的弹速、射程和重力影响特性
     /// </summary>
-    public enum 弹药类型
+    public class 弹药类型
     {
-        加特林弹药,     // 800m/s, 800m, 受重力影响
-        火箭弹药,       // 200m/s, 800m, 不受重力影响
-        火炮弹药,       // 500m/s, 2000m, 受重力影响
-        突击炮弹药,     // 500m/s, 1400m, 受重力影响
-        室内炮弹药,     // 600m/s, 600m, 受重力影响
-        机炮弹药        // 800m/s, 800m, 受重力影响
+        /// <summary>弹药名称</summary>
+        public string 名称 { get; private set; }
+        
+        /// <summary>弹速 (m/s)</summary>
+        public double 弹速 { get; private set; }
+        
+        /// <summary>最大射程 (m)</summary>
+        public double 最大射程 { get; private set; }
+        
+        /// <summary>是否受重力影响</summary>
+        public bool 受重力影响 { get; private set; }
+
+        private 弹药类型(string 名称, double 弹速, double 最大射程, bool 受重力影响)
+        {
+            this.名称 = 名称;
+            this.弹速 = 弹速;
+            this.最大射程 = 最大射程;
+            this.受重力影响 = 受重力影响;
+        }
+
+        // 预定义的弹药类型
+        public static readonly 弹药类型 加特林弹药 = new 弹药类型("加特林弹药", 800, 800, true);
+        public static readonly 弹药类型 火箭弹药 = new 弹药类型("火箭弹药", 200, 800, false);
+        public static readonly 弹药类型 火炮弹药 = new 弹药类型("火炮弹药", 500, 2000, true);
+        public static readonly 弹药类型 突击炮弹药 = new 弹药类型("突击炮弹药", 500, 1400, true);
+        public static readonly 弹药类型 室内炮弹药 = new 弹药类型("室内炮弹药", 600, 600, true);
+        public static readonly 弹药类型 机炮弹药 = new 弹药类型("机炮弹药", 800, 800, true);
+
+        public override string ToString()
+        {
+            return 名称;
+        }
     }
 
     /// <summary>
     /// 炮塔静态信息 - 存储炮塔类型的固定属性
     /// 这些信息在游戏中不会改变，可以缓存使用
+    /// 弹速、最大射程、受重力影响等属性自动从弹药类型注入
     /// </summary>
     public struct 炮塔静态信息
     {
         public readonly 弹药类型 弹药类型;
-        public readonly double 弹速;           // m/s
-        public readonly double 最大射程;       // m
+        public readonly double 弹速;           // m/s (从弹药类型自动注入)
+        public readonly double 最大射程;       // m (从弹药类型自动注入)
         public readonly double 俯仰下限;       // 弧度，负值表示向下
         public readonly double 俯仰上限;       // 弧度
         public readonly double 射击速率;       // 发/秒
         public readonly int 弹匣容量;          // 发
         public readonly double 装填时间;       // 秒
-        public readonly bool 受重力影响;       // 弹药是否受重力影响
+        public readonly bool 受重力影响;       // 弹药是否受重力影响 (从弹药类型自动注入)
         public readonly bool 是火炮类;         // 是否为火炮类武器（用于轮射判断）
 
         public 炮塔静态信息(
             弹药类型 弹药类型,
-            double 弹速,
-            double 最大射程,
             double 俯仰下限度,
             double 俯仰上限度,
             double 射击速率,
             int 弹匣容量,
             double 装填时间,
-            bool 受重力影响,
             bool 是火炮类)
         {
             this.弹药类型 = 弹药类型;
-            this.弹速 = 弹速;
-            this.最大射程 = 最大射程;
+            // 从弹药类型自动注入弹道属性
+            this.弹速 = 弹药类型.弹速;
+            this.最大射程 = 弹药类型.最大射程;
+            this.受重力影响 = 弹药类型.受重力影响;
+            // 炮塔特定属性
             this.俯仰下限 = 俯仰下限度 * Math.PI / 180.0;
             this.俯仰上限 = 俯仰上限度 * Math.PI / 180.0;
             this.射击速率 = 射击速率;
             this.弹匣容量 = 弹匣容量;
             this.装填时间 = 装填时间;
-            this.受重力影响 = 受重力影响;
             this.是火炮类 = 是火炮类;
         }
     }
@@ -85,14 +112,11 @@ namespace IngameScript
             // 大型加特林炮塔（原皮和换皮）
             var 大型加特林 = new 炮塔静态信息(
                 弹药类型: 弹药类型.加特林弹药,
-                弹速: 800,
-                最大射程: 800,
                 俯仰下限度: -43,
                 俯仰上限度: 90,
                 射击速率: 10,
                 弹匣容量: 140,
                 装填时间: 4,
-                受重力影响: true,
                 是火炮类: false
             );
             _信息缓存["LargeGatlingTurretReskin"] = 大型加特林;
@@ -101,14 +125,11 @@ namespace IngameScript
             // 小型加特林炮塔
             var 小型加特林 = new 炮塔静态信息(
                 弹药类型: 弹药类型.加特林弹药,
-                弹速: 800,
-                最大射程: 800,
                 俯仰下限度: -10,
                 俯仰上限度: 90,
                 射击速率: 10,
                 弹匣容量: 140,
                 装填时间: 6,
-                受重力影响: true,
                 是火炮类: false
             );
             _信息缓存["SmallGatlingTurret"] = 小型加特林;
@@ -118,14 +139,11 @@ namespace IngameScript
             // 大型火箭炮塔（原皮和换皮）
             var 大型火箭 = new 炮塔静态信息(
                 弹药类型: 弹药类型.火箭弹药,
-                弹速: 200,
-                最大射程: 800,
                 俯仰下限度: -58,
                 俯仰上限度: 90,
                 射击速率: 1.5,
                 弹匣容量: 6,
                 装填时间: 4,
-                受重力影响: false,  // 火箭不受重力影响
                 是火炮类: false
             );
             _信息缓存["LargeMissileTurretReskin"] = 大型火箭;
@@ -134,14 +152,11 @@ namespace IngameScript
             // 小型火箭炮塔
             var 小型火箭 = new 炮塔静态信息(
                 弹药类型: 弹药类型.火箭弹药,
-                弹速: 200,
-                最大射程: 800,
                 俯仰下限度: -8,
                 俯仰上限度: 90,
                 射击速率: 1.5,
                 弹匣容量: 2,
                 装填时间: 6,
-                受重力影响: false,
                 是火炮类: false
             );
             _信息缓存["SmallMissileTurret"] = 小型火箭;
@@ -150,14 +165,11 @@ namespace IngameScript
             // ============ 火炮炮塔 ============
             var 火炮 = new 炮塔静态信息(
                 弹药类型: 弹药类型.火炮弹药,
-                弹速: 500,
-                最大射程: 2000,
                 俯仰下限度: -15,
                 俯仰上限度: 60,
                 射击速率: 1.33,
                 弹匣容量: 2,
                 装填时间: 12,
-                受重力影响: true,
                 是火炮类: true  // 火炮类，参与轮射
             );
             _信息缓存["LargeCalibreTurret"] = 火炮;
@@ -165,28 +177,22 @@ namespace IngameScript
             // ============ 突击加农炮炮塔 ============
             var 大型突击炮 = new 炮塔静态信息(
                 弹药类型: 弹药类型.突击炮弹药,
-                弹速: 500,
-                最大射程: 1400,
                 俯仰下限度: -20,
                 俯仰上限度: 75,
                 射击速率: 3,
                 弹匣容量: 2,
                 装填时间: 6,
-                受重力影响: true,
                 是火炮类: true  // 火炮类，参与轮射
             );
             _信息缓存["LargeBlockMediumCalibreTurret"] = 大型突击炮;
 
             var 小型突击炮 = new 炮塔静态信息(
                 弹药类型: 弹药类型.突击炮弹药,
-                弹速: 500,
-                最大射程: 1400,
                 俯仰下限度: -10,
                 俯仰上限度: 50,
                 射击速率: 0.167, // 1发/6秒
                 弹匣容量: 1,
                 装填时间: 6,
-                受重力影响: true,
                 是火炮类: true
             );
             _信息缓存["SmallBlockMediumCalibreTurret"] = 小型突击炮;
@@ -194,14 +200,11 @@ namespace IngameScript
             // ============ 室内炮塔 ============
             var 室内炮塔 = new 炮塔静态信息(
                 弹药类型: 弹药类型.室内炮弹药,
-                弹速: 600,
-                最大射程: 600,
                 俯仰下限度: -76,
                 俯仰上限度: 90,
                 射击速率: 10,
                 弹匣容量: int.MaxValue, // 无限弹匣
                 装填时间: 0,
-                受重力影响: true,
                 是火炮类: false
             );
             _信息缓存["LargeInteriorTurret"] = 室内炮塔;
@@ -209,14 +212,11 @@ namespace IngameScript
             // ============ 机炮炮塔 ============
             var 机炮炮塔 = new 炮塔静态信息(
                 弹药类型: 弹药类型.机炮弹药,
-                弹速: 800,
-                最大射程: 800,
                 俯仰下限度: -10,
                 俯仰上限度: 90,
                 射击速率: 2.5,
                 弹匣容量: 16,
                 装填时间: 4,
-                受重力影响: true,
                 是火炮类: false
             );
             _信息缓存["AutoCannonTurret"] = 机炮炮塔;
@@ -265,7 +265,7 @@ namespace IngameScript
         public static string 获取分组键(IMyLargeTurretBase 炮塔)
         {
             var 信息 = 获取炮塔信息(炮塔);
-            // 使用弹药类型作为分组键，同弹速同射程的炮塔可以共享火控计算
+            // 使用弹药类型作为分组键，同弹药的炮塔可以共享火控计算
             return 信息.弹药类型.ToString();
         }
     }
@@ -343,7 +343,7 @@ namespace IngameScript
         /// </summary>
         public bool 是否可用()
         {
-            return 炮塔方块 != null && 炮塔方块.IsFunctional && 炮塔方块.Enabled;
+            return 炮塔方块 != null && 炮塔方块.IsFunctional;
         }
     }
 }
