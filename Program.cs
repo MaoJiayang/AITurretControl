@@ -167,8 +167,11 @@ namespace IngameScript
             Vector3D 目标位置 = _目标获取器.更新目标();
             bool 存在目标 = _目标获取器.存在有效目标;
             
-            // 检查目标位置是否更新（只调用一次，因为此方法会修改内部状态）
-            bool 目标位置已更新 = _目标获取器.目标位置已更新(目标位置);
+            // 计算与上次目标更新的时间差（毫秒）
+            long 时间差ms = MathHelper.帧数转毫秒(_帧计数 - _上次目标更新帧);
+            
+            // 检查目标位置是否更新（时间差>750ms时强制认为已更新）
+            bool 目标位置已更新 = _目标获取器.目标位置已更新(目标位置, 时间差ms);
 
             // 更新状态机
             更新火控状态(存在目标, 目标位置, 目标位置已更新);     
@@ -178,6 +181,9 @@ namespace IngameScript
             {
                 执行火控循环(存在目标, 目标位置, 目标位置已更新);
             }
+
+            // 每帧处理射击需求队列（不跳帧，平滑处理）
+            _射击控制器?.处理射击需求();
 
             // 更新显示和性能统计
             更新性能统计();
@@ -230,7 +236,7 @@ namespace IngameScript
                 _火控计算器 = new 火控计算器(_参数管理器, _目标跟踪器);
             }
 
-            // 阶段5：初始化射击控制器
+            // 阶段5：初始化射击控制器（内部会创建射击需求处理器）
             if (_射击控制器 == null)
             {
                 _射击控制器 = new 射击控制器(_参数管理器, _炮塔管理器, _火控计算器);
@@ -376,7 +382,7 @@ namespace IngameScript
             // 计算时间偏移
             long 时间偏移ms = MathHelper.帧数转毫秒(_帧计数 - _上次目标更新帧);
 
-            if(_目标跟踪器.GetHistoryCount() < 2) return;// 暂时缓解目标跟踪器历史数据不足时乱打的问题
+            if(_目标跟踪器.GetHistoryCount() < 1) return;// 暂时缓解目标跟踪器历史数据不足时乱打的问题
             // 对每个聚类组执行火控计算并开启射击
             foreach (var 聚类组 in _炮塔管理器.获取所有聚类组())
             {
@@ -504,6 +510,7 @@ namespace IngameScript
                 double 距离 = (_当前目标位置 - (_主控制器?.GetPosition() ?? Vector3D.Zero)).Length();
                 _状态信息.AppendLine($"目标距离: {距离:F0}m");
                 _状态信息.AppendLine($"历史: {_目标跟踪器?.GetHistoryCount() ?? 0} | 误差: {_目标跟踪器?.combinationError:F2}m/s");
+                _状态信息.AppendLine($"圆周：{_目标跟踪器.circularWeight:F2} | 线性：{_目标跟踪器.linearWeight:F2}");
             }
             else
             {

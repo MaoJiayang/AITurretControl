@@ -26,7 +26,7 @@ namespace IngameScript
         /// 聚类距离（米）
         /// 同类炮塔在此距离内共享火控计算结果
         /// </summary>
-        public double 聚类距离 { get; set; } = 25.0;
+        public double 聚类距离 { get; set; } = 100.0;
 
         /// <summary>
         /// 火控更新跳帧数
@@ -43,7 +43,14 @@ namespace IngameScript
         /// 平行偏差修正阈值（米）
         /// 炮塔与代表炮塔距离超过此值时进行平行偏差修正
         /// </summary>
-        public double 平行偏差修正阈值 { get; set; } = 5.0;
+        public double 平行偏差修正阈值 { get; set; } = 10;
+
+        /// <summary>
+        /// 每帧最多处理的射击需求数量
+        /// 限制每帧设置Shoot属性的炮塔数量，优化性能
+        /// 支持小数（如0.5表示两帧处理一个）
+        /// </summary>
+        public double 每帧最大射击处理数 { get; set; } = 0.1;
 
         #endregion
 
@@ -65,7 +72,7 @@ namespace IngameScript
         /// <summary>
         /// 目标历史记录最大长度
         /// </summary>
-        public int 目标历史最大长度 { get; set; } = 12;
+        public int 目标历史最大长度 { get; set; } = 6;
 
         #endregion
 
@@ -127,6 +134,11 @@ namespace IngameScript
                 () => 平行偏差修正阈值.ToString(),
                 v => { double val; if (double.TryParse(v, out val)) 平行偏差修正阈值 = val; },
                 "触发平行偏差修正的距离阈值(米)");
+
+            注册参数("每帧最大射击处理数",
+                () => 每帧最大射击处理数.ToString("F1"),
+                v => { double val; if (double.TryParse(v, out val)) 每帧最大射击处理数 = val; },
+                "每帧最多处理的射击需求数量(支持小数,如0.5表示两帧处理一个)");
 
             // ============ 目标跟踪参数 ============
             注册参数("目标历史最大长度",
