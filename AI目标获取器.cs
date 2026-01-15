@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Sandbox.ModAPI.Ingame;
+using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
 namespace IngameScript
@@ -72,7 +73,7 @@ namespace IngameScript
             _已初始化 = false;
             存在有效目标 = false;
             目标位置 = Vector3D.Zero;
-            _上次目标位置 = Vector3D.NegativeInfinity;
+            _上次目标位置 = Vector3D.Zero;
             _上次目标ID = 0;
         }
 
@@ -142,10 +143,6 @@ namespace IngameScript
                 return Vector3D.NegativeInfinity;
             }
 
-            // 检查目标是否改变（用于判断目标切换）
-            bool 目标已改变 = !新目标位置.Equals(_上次目标位置);
-
-            _上次目标位置 = 新目标位置;
             存在有效目标 = true;
             目标位置 = 新目标位置;
 
@@ -161,7 +158,14 @@ namespace IngameScript
         public bool 目标位置已更新(Vector3D 新位置)
         {
             const double 最小位置变化 = 0.01; // 1厘米
-            return (新位置 - _上次目标位置).LengthSquared() > 最小位置变化 * 最小位置变化;
+            // _输出?.Invoke($"检查位置更新: 新位置={新位置.X:F1},{新位置.Y:F1},{新位置.Z:F1} 上次位置={_上次目标位置.X:F1},{_上次目标位置.Y:F1},{_上次目标位置.Z:F1}");
+            bool 已更新 = (新位置 - _上次目标位置).LengthSquared() > 最小位置变化 * 最小位置变化;
+            // _输出?.Invoke($"已更新：{已更新}");
+            if (已更新)
+            {
+                _上次目标位置 = 新位置;
+            }
+            return 已更新;
         }
 
         /// <summary>
@@ -171,8 +175,11 @@ namespace IngameScript
         {
             存在有效目标 = false;
             目标位置 = Vector3D.Zero;
-            _上次目标位置 = Vector3D.NegativeInfinity;
+            _上次目标位置 = Vector3D.Zero;
             _上次目标ID = 0;
+            _已初始化 = false;
+            _攻击块 = null;
+            _飞行块 = null;
         }
 
         #endregion
@@ -181,25 +188,47 @@ namespace IngameScript
 
         /// <summary>
         /// 配置AI块的工作状态
-        /// 攻击块开启且启用AI，飞行块关闭但启用AI
+        /// 参考导弹代码的配置方式
         /// </summary>
         private void 配置AI块()
         {
-            // 配置攻击AI块 - 开启并启用AI功能
-            if (_攻击块 != null)
-            {
-                _攻击块.Enabled = true;
-                _攻击块.ApplyAction("ActivateBehavior_On");
-            }
-
-            // 配置飞行AI块 - 关闭但启用AI功能（用于获取目标坐标）
+            // 配置飞行AI块 - 关闭但启用AI功能（只用于获取目标坐标）
             if (_飞行块 != null)
             {
-                _飞行块.Enabled = false;
-                _飞行块.ApplyAction("ActivateBehavior_On");
+                // _飞行块.SpeedLimit = 100f;           // 设置一个速度限制（不重要，因为不会真正飞行）
+                _飞行块.AlignToPGravity = false;     // 不与重力对齐
+                _飞行块.Enabled = false;             // 关闭方块（不让它真正控制飞行）
+                _飞行块.ApplyAction("ActivateBehavior_On");  // 但启用AI行为（这样才能获取目标信息）
+                _输出?.Invoke($"配置飞行块: {_飞行块.CustomName}");
             }
 
-            _输出?.Invoke("AI块配置完成");
+            // 配置攻击AI块 - 开启并启用AI功能（负责目标选择）
+            if (_攻击块 != null)
+            {
+                // 设置目标优先级（可以通过参数配置）
+                _攻击块.TargetPriority = OffensiveCombatTargetPriority.Closest;  // 优先攻击最近目标
+                _攻击块.UpdateTargetInterval = 1;    // 目标更新间隔设为1以获得最快刷新
+                _攻击块.Enabled = true;              // 开启方块
+                
+                // 设置攻击模式为拦截模式（如果可用）
+                // 拦截模式会让AI持续跟踪目标
+                // AttackPattern: 0=Default, 1=StrikeAndReturn, 2=OrbitAndAttack, 3=Intercept
+                _攻击块.SelectedAttackPattern = 3;  // 拦截模式
+                _攻击块.ApplyAction("ActivateBehavior_On");  // 启用AI行为
+                
+                // 尝试配置拦截模式的制导类型为Basic（减少AI自主性）
+                IMyAttackPatternComponent 攻击模式;
+                if (_攻击块.TryGetSelectedAttackPattern(out 攻击模式))
+                {
+                    IMyOffensiveCombatIntercept 拦截模式 = 攻击模式 as IMyOffensiveCombatIntercept;
+                    if (拦截模式 != null)
+                    {
+                        // GuidanceType: 0=Basic, 1=Aggressive
+                        拦截模式.GuidanceType = 0;
+                    }
+                }
+                _输出?.Invoke($"配置攻击块: {_攻击块.CustomName}");
+            }
         }
 
         /// <summary>

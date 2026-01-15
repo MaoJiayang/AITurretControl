@@ -65,23 +65,27 @@ namespace IngameScript
             double 弹速,
             bool 受重力影响,
             Vector3D 舰船速度,
-            Vector3D 重力向量)
+            Vector3D 重力向量,
+            long 启始时间偏移ms
+            )
         {
-            // 获取目标当前位置和速度
-            var 目标信息 = _目标跟踪器.GetLatestTargetInfo();
-            if (!目标信息.HasValue)
+            // 获取目标当前位置和速度,需要算上时间偏移
+            var 目标信息 = _目标跟踪器.PredictFutureTargetInfo(启始时间偏移ms);
+            
+            // 检查目标跟踪器是否有有效数据
+            if (_目标跟踪器.GetHistoryCount() == 0)
             {
                 return 炮塔位置 + Vector3D.Forward * 100; // 无目标时返回默认方向
             }
 
-            Vector3D 目标位置 = 目标信息.Value.Position;
-            Vector3D 目标速度 = 目标信息.Value.Velocity;
+            Vector3D 目标位置 = 目标信息.Position;
+            Vector3D 目标速度 = 目标信息.Velocity;
 
             // 1. 使用线性解作为初始拦截点
             Vector3D 拦截点 = 计算线性解拦截点(炮塔位置, 目标位置, 目标速度, 舰船速度, 弹速);
 
-            // 2. 迭代优化拦截点
-            拦截点 = 迭代优化拦截点(炮塔位置, 拦截点, 弹速, 舰船速度);
+            // 2. 迭代优化拦截点（传入启始时间偏移）
+            拦截点 = 迭代优化拦截点(炮塔位置, 拦截点, 弹速, 舰船速度, 启始时间偏移ms);
 
             // 3. 应用重力补偿
             if (受重力影响 && 重力向量.LengthSquared() > 最小有效值)
@@ -170,7 +174,8 @@ namespace IngameScript
             Vector3D 炮塔位置,
             Vector3D 初始拦截点,
             double 弹速,
-            Vector3D 舰船速度)
+            Vector3D 舰船速度,
+            long 启始时间偏移ms)
         {
             Vector3D 拦截点 = 初始拦截点;
             int 跳帧 = _参数.火控更新跳帧;
@@ -181,8 +186,8 @@ namespace IngameScript
                 double 距离 = Vector3D.Distance(炮塔位置, 拦截点);
                 double 飞行时间 = 距离 / 弹速;
 
-                // 预测目标在未来位置（考虑火控更新延迟）
-                long 预测时间ms = (long)(飞行时间 * 1000) + 跳帧 * 17;
+                // 预测目标在未来位置（考虑启始时间偏移 + 飞行时间 + 火控更新延迟）
+                long 预测时间ms = 启始时间偏移ms + (long)(飞行时间 * 1000) + MathHelper.帧数转毫秒(跳帧);
                 var 目标预测 = _目标跟踪器.PredictFutureTargetInfo(预测时间ms, false);
 
                 // 参考系变换：计算舰船在飞行时间内的位移

@@ -525,5 +525,9 @@ namespace IngameScript
             double x = -(double)(时间差毫秒 - 参考时间毫秒) / 温度参数;
             return 1.0 / (1.0 + Math.Exp(-x));
         }
+        public static long 帧数转毫秒(int 帧数, double 帧时间毫秒 = 1000/60.0)
+        {
+            return (long)(帧数 * 帧时间毫秒);
+        }
     }
 }

@@ -42,9 +42,8 @@ namespace IngameScript
         private const string 系统名称 = "AI块火控炮塔系统";
 
         #endregion
-
+        
         #region 核心组件
-
         /// <summary>参数管理器 - 管理所有可配置参数</summary>
         private 参数管理器 _参数管理器;
 
@@ -164,10 +163,20 @@ namespace IngameScript
                 _射击控制器.初始化();
             }
 
+            // 每帧获取目标位置（不能跳帧，否则会有延迟）
+            Vector3D 目标位置 = _目标获取器.更新目标();
+            bool 存在目标 = _目标获取器.存在有效目标;
+            
+            // 检查目标位置是否更新（只调用一次，因为此方法会修改内部状态）
+            bool 目标位置已更新 = _目标获取器.目标位置已更新(目标位置);
+
+            // 更新状态机
+            更新火控状态(存在目标, 目标位置, 目标位置已更新);     
+
             // 执行火控主循环（跳帧控制）
             if (_帧计数 % _参数管理器.火控更新跳帧 == 0)
             {
-                执行火控循环();
+                执行火控循环(存在目标, 目标位置, 目标位置已更新);
             }
 
             // 更新显示和性能统计
@@ -194,7 +203,7 @@ namespace IngameScript
             // 阶段2：初始化AI目标获取器
             if (_目标获取器 == null)
             {
-                _目标获取器 = new AI目标获取器(GridTerminalSystem, _参数管理器, null);
+                _目标获取器 = new AI目标获取器(GridTerminalSystem, _参数管理器, Echo);
                 if (!_目标获取器.初始化())
                 {
                     _初始化错误信息 = "AI目标获取器初始化失败";
@@ -268,18 +277,16 @@ namespace IngameScript
 
         /// <summary>
         /// 执行火控主循环
-        /// 包含目标获取、状态更新、火控计算、射击控制
+        /// 包含状态更新、火控计算、射击控制
         /// </summary>
-        private void 执行火控循环()
+        /// <param name="存在目标">是否存在有效目标</param>
+        /// <param name="目标位置">目标位置</param>
+        /// <param name="目标位置已更新">目标位置是否发生变化</param>
+        private void 执行火控循环(bool 存在目标, Vector3D 目标位置, bool 目标位置已更新)
         {
-            // 步骤1：获取目标
-            Vector3D 目标位置 = _目标获取器.更新目标();
-            bool 存在目标 = _目标获取器.存在有效目标;
 
-            // 步骤2：更新状态机
-            更新火控状态(存在目标, 目标位置);
 
-            // 步骤3：根据状态执行相应逻辑
+            // 步骤2：根据状态执行相应逻辑
             switch (_当前状态)
             {
                 case 火控状态.待机:
@@ -287,7 +294,7 @@ namespace IngameScript
                     break;
 
                 case 火控状态.跟踪目标:
-                    处理跟踪状态(目标位置);
+                    处理跟踪状态(目标位置, 目标位置已更新);
                     break;
 
                 case 火控状态.目标丢失:
@@ -299,7 +306,7 @@ namespace IngameScript
         /// <summary>
         /// 更新火控状态机
         /// </summary>
-        private void 更新火控状态(bool 存在目标, Vector3D 目标位置)
+        private void 更新火控状态(bool 存在目标, Vector3D 目标位置, bool 目标位置已更新)
         {
             switch (_当前状态)
             {
@@ -318,9 +325,12 @@ namespace IngameScript
                         _当前状态 = 火控状态.目标丢失;
                         _上次目标更新帧 = _帧计数;
                     }
-                    else if (_目标获取器.目标位置已更新(目标位置))
+                    else if (目标位置已更新)
                     {
                         _上次目标更新帧 = _帧计数;
+                        long 当前时间戳ms = MathHelper.帧数转毫秒(_帧计数);
+                        _目标跟踪器.UpdateTarget(目标位置, Vector3D.Zero, 当前时间戳ms);
+                        _当前目标位置 = 目标位置;
                     }
                     break;
 
@@ -352,13 +362,8 @@ namespace IngameScript
         /// <summary>
         /// 处理跟踪目标状态
         /// </summary>
-        private void 处理跟踪状态(Vector3D 目标位置)
+        private void 处理跟踪状态(Vector3D 目标位置, bool 目标位置已更新)
         {
-            // 更新目标跟踪器
-            long 当前时间戳ms = (long)(_帧计数 * _参数管理器.时间常数 * 1000);
-            _目标跟踪器.UpdateTarget(目标位置, Vector3D.Zero, 当前时间戳ms);
-            _当前目标位置 = 目标位置;
-
             // 获取舰船信息
             Vector3D 舰船速度 = Vector3D.Zero;
             Vector3D 重力向量 = Vector3D.Zero;
@@ -407,7 +412,9 @@ namespace IngameScript
                     弹速,
                     受重力影响,
                     舰船速度,
-                    重力向量);
+                    重力向量,
+                    MathHelper.帧数转毫秒(_帧计数 - _上次目标更新帧)
+                    );
 
                 // 缓存结果供组内其他炮塔使用
                 聚类组.缓存瞄准点 = 瞄准点;
@@ -534,7 +541,7 @@ namespace IngameScript
                 // 显示轮射状态
                 if (_参数管理器.火炮类使用轮射 && _射击控制器 != null)
                 {
-                    _状态信息.AppendLine($"轮射索引: {_射击控制器.当前轮射索引}");
+                    _状态信息.AppendLine($"轮射组: {_射击控制器.轮射组数量}");
                 }
             }
             else
