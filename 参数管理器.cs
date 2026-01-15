@@ -29,12 +29,6 @@ namespace IngameScript
         public double 聚类距离 { get; set; } = 25.0;
 
         /// <summary>
-        /// 火炮类是否使用轮射
-        /// true: 轮射模式，false: 齐射模式
-        /// </summary>
-        public bool 火炮类使用轮射 { get; set; } = true;
-
-        /// <summary>
         /// 火控更新跳帧数
         /// 每隔多少帧执行一次火控计算
         /// </summary>
@@ -118,11 +112,6 @@ namespace IngameScript
                 () => 聚类距离.ToString(),
                 v => { double val; if (double.TryParse(v, out val)) 聚类距离 = val; },
                 "同类炮塔聚类距离(米)，此范围内共享火控计算");
-
-            注册参数("火炮类使用轮射",
-                () => 火炮类使用轮射.ToString(),
-                v => { bool val; if (bool.TryParse(v, out val)) 火炮类使用轮射 = val; },
-                "火炮类武器是否使用轮射(true/false)");
 
             注册参数("火控更新跳帧",
                 () => 火控更新跳帧.ToString(),

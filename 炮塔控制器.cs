@@ -14,60 +14,46 @@ namespace IngameScript
 
         /// <summary>
         /// 控制炮塔瞄准指定位置
-        /// 使用直接设置方位角和俯仰角的方式实现瞬间瞄准
+        /// 检查目标可达性（射程+俯仰限制），可达时设置瞄准角度
         /// </summary>
-        /// <param name="炮塔">炮塔方块</param>
+        /// <param name="炮塔信息">炮塔运行时信息</param>
         /// <param name="瞄准点">世界坐标瞄准点</param>
-        /// <returns>是否在有效俯仰范围内</returns>
-        public static bool 瞄准(IMyLargeTurretBase 炮塔, Vector3D 瞄准点)
+        /// <returns>目标是否可达（在射程内且俯仰有效）</returns>
+        public static bool 瞄准(炮塔运行时信息 炮塔信息, Vector3D 瞄准点)
         {
-            if (炮塔 == null || !炮塔.IsFunctional)
+            if (炮塔信息 == null || !炮塔信息.是否可用())
                 return false;
 
-            // 计算瞄准角度
-            double 方位角, 俯仰角;
-            计算瞄准角度(炮塔, 瞄准点, out 方位角, out 俯仰角);
+            var 炮塔 = 炮塔信息.炮塔方块;
+            var 静态信息 = 炮塔信息.静态信息;
 
-            // 设置炮塔角度
-            炮塔.Azimuth = (float)方位角;
-            炮塔.Elevation = (float)俯仰角;
-
-            // 同步角度确保立即生效
-            同步角度(炮塔);
-
-            // 检查俯仰是否有效（使用弧度制的通用限制）
-            // 注意：实际限制应从炮塔静态信息获取，这里做基本检查
-            return true; // 炮塔API会自动限制在有效范围内
-        }
-
-        /// <summary>
-        /// 控制炮塔瞄准指定位置（带俯仰限制检查）
-        /// </summary>
-        /// <param name="炮塔">炮塔方块</param>
-        /// <param name="瞄准点">世界坐标瞄准点</param>
-        /// <param name="俯仰下限">俯仰下限（弧度）</param>
-        /// <param name="俯仰上限">俯仰上限（弧度）</param>
-        /// <returns>是否在有效俯仰范围内</returns>
-        public static bool 瞄准带限制(IMyLargeTurretBase 炮塔, Vector3D 瞄准点, double 俯仰下限, double 俯仰上限)
-        {
-            if (炮塔 == null || !炮塔.IsFunctional)
-                return false;
+            // 检查射程：计算炮塔到目标的距离
+            Vector3D 炮塔位置 = 炮塔.GetPosition();
+            double 距离平方 = (瞄准点 - 炮塔位置).LengthSquared();
+            if (距离平方 > 静态信息.最大射程 * 静态信息.最大射程)
+            {
+                return false; // 超出射程
+            }
 
             // 计算瞄准角度
             double 方位角, 俯仰角;
             计算瞄准角度(炮塔, 瞄准点, out 方位角, out 俯仰角);
 
             // 检查俯仰是否在限制范围内
-            bool 俯仰有效 = 检查俯仰有效性(俯仰角, 俯仰下限, 俯仰上限);
+            bool 俯仰有效 = 检查俯仰有效性(俯仰角, 静态信息.俯仰下限, 静态信息.俯仰上限);
+            if (!俯仰有效)
+            {
+                return false; // 俯仰角超出限制
+            }
 
-            // 设置炮塔角度
+            // 目标可达，设置炮塔角度
             炮塔.Azimuth = (float)方位角;
             炮塔.Elevation = (float)俯仰角;
 
             // 同步角度确保立即生效
             同步角度(炮塔);
 
-            return 俯仰有效;
+            return true; // 目标可达
         }
 
         /// <summary>
@@ -159,7 +145,7 @@ namespace IngameScript
         /// </summary>
         public static bool 检查可用(IMyLargeTurretBase 炮塔)
         {
-            return 炮塔 != null && 炮塔.IsFunctional && 炮塔.Enabled;
+            return 炮塔 != null && 炮塔.IsFunctional;
         }
 
         #endregion

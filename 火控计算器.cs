@@ -218,6 +218,20 @@ namespace IngameScript
         }
 
         /// <summary>
+        /// 获取当前目标速度
+        /// 用于平行偏差修正计算
+        /// </summary>
+        /// <param name="时间偏移ms">时间偏移（毫秒）</param>
+        public Vector3D 获取当前目标速度(long 时间偏移ms = 0)
+        {
+            if (_目标跟踪器.GetHistoryCount() == 0)
+                return Vector3D.Zero;
+
+            var 目标信息 = _目标跟踪器.PredictFutureTargetInfo(时间偏移ms);
+            return 目标信息.Velocity;
+        }
+
+        /// <summary>
         /// 计算平行偏差修正
         /// 用于非代表炮塔基于代表炮塔的计算结果进行位置修正
         /// </summary>
@@ -254,15 +268,6 @@ namespace IngameScript
             Vector3D 调整量 = (目标速度 - 舰船速度) * 时间差;
 
             return 代表瞄准点 + 调整量;
-        }
-
-        /// <summary>
-        /// 检查目标是否在射程内
-        /// </summary>
-        public bool 检查射程(Vector3D 炮塔位置, Vector3D 目标位置, double 最大射程)
-        {
-            double 距离平方 = (目标位置 - 炮塔位置).LengthSquared();
-            return 距离平方 <= 最大射程 * 最大射程;
         }
 
         #endregion
