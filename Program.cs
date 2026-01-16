@@ -167,16 +167,16 @@ namespace IngameScript
             
             // 计算与上次目标更新的时间差（毫秒）
             long 时间差ms = MathHelper.帧数转毫秒(_帧计数 - _上次目标更新帧);
-            // 检查目标位置是否更新（时间差>750ms时强制认为已更新）
-            bool 目标位置已更新 = _目标获取器.目标位置已更新(目标位置, 时间差ms);
+            // 检查目标位置是否需更新
+            bool 目标位置需更新 = _目标获取器.目标位置需更新(目标位置, 时间差ms);
 
             // 更新状态机
-            更新火控状态(存在目标, 目标位置, 目标位置已更新);     
+            更新火控状态(存在目标, 目标位置, 目标位置需更新);     
 
             // 执行火控主循环（跳帧控制）
             if (_帧计数 % _参数管理器.火控更新跳帧 == 0)
             {
-                执行火控循环(存在目标, 目标位置, 目标位置已更新);
+                执行火控循环();
                 显示状态信息();
             }
 
@@ -285,7 +285,7 @@ namespace IngameScript
         /// <param name="存在目标">是否存在有效目标</param>
         /// <param name="目标位置">目标位置</param>
         /// <param name="目标位置已更新">目标位置是否发生变化</param>
-        private void 执行火控循环(bool 存在目标, Vector3D 目标位置, bool 目标位置已更新)
+        private void 执行火控循环()
         {
 
 
@@ -297,7 +297,7 @@ namespace IngameScript
                     break;
 
                 case 火控状态.跟踪目标:
-                    处理跟踪状态(目标位置, 目标位置已更新);
+                    处理跟踪状态();
                     break;
 
                 case 火控状态.目标丢失:
@@ -365,7 +365,7 @@ namespace IngameScript
         /// <summary>
         /// 处理跟踪目标状态
         /// </summary>
-        private void 处理跟踪状态(Vector3D 目标位置, bool 目标位置已更新)
+        private void 处理跟踪状态()
         {
             // 获取舰船信息
             Vector3D 舰船速度 = Vector3D.Zero;
@@ -379,7 +379,7 @@ namespace IngameScript
             // 计算时间偏移
             long 时间偏移ms = MathHelper.帧数转毫秒(_帧计数 - _上次目标更新帧);
 
-            if(_目标跟踪器.GetHistoryCount() < 1) return;// 暂时缓解目标跟踪器历史数据不足时乱打的问题
+            // if(_目标跟踪器.GetHistoryCount() < 1) return;// 暂时缓解目标跟踪器历史数据不足时乱打的问题// 已经通过将AI攻击块更新间隔设置为0解决
             // 对每个聚类组执行火控计算并开启射击
             foreach (var 聚类组 in _炮塔管理器.获取所有聚类组())
             {

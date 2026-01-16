@@ -156,11 +156,11 @@ namespace IngameScript
         /// <param name="新位置">新的目标位置</param>
         /// <param name="时间差ms">与上次更新的时间差（毫秒），为0则禁用时间差检查</param>
         /// <returns>位置是否变化</returns>
-        public bool 目标位置已更新(Vector3D 新位置, long 时间差ms)
+        public bool 目标位置需更新(Vector3D 新位置, long 时间差ms)
         {
             const double 最小位置变化 = 0.01; // 1厘米
             // _输出?.Invoke($"检查位置更新: 新位置={新位置.X:F1},{新位置.Y:F1},{新位置.Z:F1} 上次位置={_上次目标位置.X:F1},{_上次目标位置.Y:F1},{_上次目标位置.Z:F1}");
-            bool 已更新 = (新位置 - _上次目标位置).LengthSquared() > 最小位置变化 * 最小位置变化 || _上次目标位置.Equals(Vector3D.Zero) || 时间差ms > 750;// TODO：待解决目标静止时间长不视为更新的问题
+            bool 已更新 = (新位置 - _上次目标位置).LengthSquared() > 最小位置变化 * 最小位置变化 || _上次目标位置.Equals(Vector3D.Zero) || 时间差ms > 750;
             // _输出?.Invoke($"已更新：{已更新}");
             if (已更新)
             {
