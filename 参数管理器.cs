@@ -51,7 +51,11 @@ namespace IngameScript
         /// 支持小数（如0.5表示两帧处理一个）
         /// </summary>
         public double 每帧最大射击处理数 { get; set; } = 0.1;
-
+        /// <summary>
+        /// 是否托管机枪类炮塔（非火炮类）
+        /// 默认false，仅管理火炮类炮塔
+        /// </summary>
+        public bool 托管机枪类 { get; set; } = false;
         #endregion
 
         #region 制导相关参数
@@ -139,6 +143,11 @@ namespace IngameScript
                 () => 每帧最大射击处理数.ToString("F1"),
                 v => { double val; if (double.TryParse(v, out val)) 每帧最大射击处理数 = val; },
                 "每帧最多处理的射击需求数量(支持小数,如0.5表示两帧处理一个)");
+
+            注册参数("托管机枪类",
+                () => 托管机枪类.ToString(),
+                v => { bool val; if (bool.TryParse(v, out val)) 托管机枪类 = val; },
+                "是否托管机枪类炮塔(非火炮类),默认false仅管理火炮");
 
             // ============ 目标跟踪参数 ============
             注册参数("目标历史最大长度",

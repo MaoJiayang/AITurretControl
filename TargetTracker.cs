@@ -155,6 +155,8 @@ namespace IngameScript
         public void ClearHistory()
         {
             maxTargetAcceleration = 0;
+            linearWeight = 0.5;
+            circularWeight = 0.5;
             _history.Clear();
         }
         /// <summary>
@@ -375,7 +377,7 @@ namespace IngameScript
                 circlingRadius = radius; // 更新当前环绕半径
 
                 // 半径不合理时视为无效圆周运动
-                if (radius > RadiusThreshold || double.IsNaN(radius) || double.IsInfinity(radius))
+                if (radius > RadiusThreshold || double.IsNaN(radius) || radius < 1)
                 {
                     return CircularMotionParams.Invalid;
                 }
@@ -532,7 +534,7 @@ namespace IngameScript
             combinationError = (combinedPosition - p0.Position).Length() / predictionTimeCicular * 1000;
 
             // 异常保护
-            if (double.IsNaN(combinationError)) _history.Clear();
+            if (double.IsNaN(combinationError)) ClearHistory();
 
             // double minIndividualError = Math.Min(linearError, circularError);
             // if (combinationError > minIndividualError)

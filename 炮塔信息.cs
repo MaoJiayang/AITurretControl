@@ -144,7 +144,7 @@ namespace IngameScript
                 射击速率: 1.5,
                 弹匣容量: 6,
                 装填时间: 4,
-                是火炮类: false
+                是火炮类: true
             );
             _信息缓存["LargeMissileTurretReskin"] = 大型火箭;
             _默认火箭信息 = 大型火箭; // 原皮大型火箭使用此信息
@@ -157,7 +157,7 @@ namespace IngameScript
                 射击速率: 1.5,
                 弹匣容量: 2,
                 装填时间: 6,
-                是火炮类: false
+                是火炮类: true
             );
             _信息缓存["SmallMissileTurret"] = 小型火箭;
             _信息缓存["SmallMissileTurretReskin"] = 小型火箭;

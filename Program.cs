@@ -508,6 +508,7 @@ namespace IngameScript
                 _状态信息.AppendLine($"目标距离: {距离:F0}m");
                 _状态信息.AppendLine($"历史: {_目标跟踪器?.GetHistoryCount() ?? 0} | 误差: {_目标跟踪器?.combinationError:F2}m/s");
                 _状态信息.AppendLine($"圆周：{_目标跟踪器.circularWeight:F2} | 线性：{_目标跟踪器.linearWeight:F2}");
+                _状态信息.AppendLine($"圆周误差: {_目标跟踪器.circularError:F2}m/s | 线性误差: {_目标跟踪器.linearError:F2}m/s");
             }
             else
             {
