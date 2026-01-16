@@ -532,6 +532,8 @@ namespace IngameScript
             combinationError = (combinedPosition - p0.Position).Length() / predictionTimeCicular * 1000;
 
             // 异常保护
+            if (double.IsNaN(combinationError)) _history.Clear();
+
             // double minIndividualError = Math.Min(linearError, circularError);
             // if (combinationError > minIndividualError)
             // {
