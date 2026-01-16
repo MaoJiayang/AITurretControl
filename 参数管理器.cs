@@ -26,31 +26,31 @@ namespace IngameScript
         /// 聚类距离（米）
         /// 同类炮塔在此距离内共享火控计算结果
         /// </summary>
-        public double 聚类距离 { get; set; } = 100.0;
+        public double 聚类距离 { get; set; } = 12.5;
 
         /// <summary>
-        /// 火控更新跳帧数
-        /// 每隔多少帧执行一次火控计算
+        /// 火控更新周期（帧数）
+        /// 每个聚类组在此周期内至少更新一次火控
         /// </summary>
-        public int 火控更新跳帧 { get; set; } = 6;
+        public int 火控更新周期 { get; set; } = 7;
 
         /// <summary>
         /// 弹道计算迭代次数
         /// </summary>
-        public int 弹道迭代次数 { get; set; } = 3;
+        public int 弹道迭代次数 { get; set; } = 5;
 
         /// <summary>
         /// 平行偏差修正阈值（米）
         /// 炮塔与代表炮塔距离超过此值时进行平行偏差修正
         /// </summary>
-        public double 平行偏差修正阈值 { get; set; } = 10;
+        public double 平行偏差修正阈值 { get; set; } = 7.5;
 
         /// <summary>
         /// 每帧最多处理的射击需求数量
         /// 限制每帧设置Shoot属性的炮塔数量，优化性能
         /// 支持小数（如0.5表示两帧处理一个）
         /// </summary>
-        public double 每帧最大射击处理数 { get; set; } = 0.1;
+        public double 每帧最大射击处理数 { get; set; } = 0.15;
         /// <summary>
         /// 是否托管机枪类炮塔（非火炮类）
         /// 默认false，仅管理火炮类炮塔
@@ -124,10 +124,10 @@ namespace IngameScript
                 v => { double val; if (double.TryParse(v, out val)) 聚类距离 = val; },
                 "同类炮塔聚类距离(米)，此范围内共享火控计算");
 
-            注册参数("火控更新跳帧",
-                () => 火控更新跳帧.ToString(),
-                v => { int val; if (int.TryParse(v, out val)) 火控更新跳帧 = val; },
-                "火控计算更新间隔(帧数)");
+            注册参数("火控更新周期",
+                () => 火控更新周期.ToString(),
+                v => { int val; if (int.TryParse(v, out val)) 火控更新周期 = val; },
+                "每个聚类组的火控更新周期(帧数)");
 
             注册参数("弹道迭代次数",
                 () => 弹道迭代次数.ToString(),
@@ -140,7 +140,7 @@ namespace IngameScript
                 "触发平行偏差修正的距离阈值(米)");
 
             注册参数("每帧最大射击处理数",
-                () => 每帧最大射击处理数.ToString("F1"),
+                () => 每帧最大射击处理数.ToString("F2"),// 注意这里有保留
                 v => { double val; if (double.TryParse(v, out val)) 每帧最大射击处理数 = val; },
                 "每帧最多处理的射击需求数量(支持小数,如0.5表示两帧处理一个)");
 

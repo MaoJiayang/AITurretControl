@@ -179,7 +179,6 @@ namespace IngameScript
             long 启始时间偏移ms)
         {
             Vector3D 拦截点 = 初始拦截点;
-            int 跳帧 = _参数.火控更新跳帧;
 
             for (int i = 0; i < _参数.弹道迭代次数; i++)
             {
@@ -198,8 +197,8 @@ namespace IngameScript
                 // 使用实际弹速计算飞行时间
                 double 飞行时间 = 距离 / 实际弹速;
 
-                // 预测目标在未来位置（考虑启始时间偏移 + 飞行时间 + 火控更新延迟）
-                long 预测时间ms = 启始时间偏移ms + (long)(飞行时间 * 1000) + MathHelper.帧数转毫秒(跳帧);
+                // 预测目标在未来位置（考虑启始时间偏移 + 飞行时间）
+                long 预测时间ms = 启始时间偏移ms + (long)(飞行时间 * 1000);
                 var 目标预测 = _目标跟踪器.PredictFutureTargetInfo(预测时间ms, false);
 
                 // 参考系变换：计算舰船在飞行时间内的位移

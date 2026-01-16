@@ -120,6 +120,9 @@ namespace IngameScript
         /// <summary>按分组键组织的聚类组字典</summary>
         private Dictionary<string, List<炮塔聚类组>> _聚类组字典;
 
+        /// <summary>所有聚类组的扁平列表（缓存，避免重复迭代）</summary>
+        private List<炮塔聚类组> _所有聚类组列表;
+
         /// <summary>火炮类炮塔列表（用于轮射控制）</summary>
         private List<炮塔运行时信息> _火炮类炮塔;
 
@@ -183,6 +186,7 @@ namespace IngameScript
 
             _所有炮塔 = new List<炮塔运行时信息>();
             _聚类组字典 = new Dictionary<string, List<炮塔聚类组>>();
+            _所有聚类组列表 = new List<炮塔聚类组>();
             _火炮类炮塔 = new List<炮塔运行时信息>();
             _非火炮类炮塔 = new List<炮塔运行时信息>();
 
@@ -207,6 +211,7 @@ namespace IngameScript
             // 清空现有数据
             _所有炮塔.Clear();
             _聚类组字典.Clear();
+            _所有聚类组列表.Clear();
             _火炮类炮塔.Clear();
             _非火炮类炮塔.Clear();
 
@@ -254,18 +259,12 @@ namespace IngameScript
         }
 
         /// <summary>
-        /// 获取所有聚类组的迭代器
+        /// 获取所有聚类组列表（直接返回缓存，避免重复迭代）
         /// 用于火控计算遍历
         /// </summary>
-        public IEnumerable<炮塔聚类组> 获取所有聚类组()
+        public List<炮塔聚类组> 获取所有聚类组列表()
         {
-            foreach (var 组列表 in _聚类组字典.Values)
-            {
-                for (int i = 0; i < 组列表.Count; i++)
-                {
-                    yield return 组列表[i];
-                }
-            }
+            return _所有聚类组列表;
         }
 
         /// <summary>
@@ -392,6 +391,9 @@ namespace IngameScript
                 }
 
                 _聚类组字典[分组键] = 聚类组列表;
+                
+                // 同时添加到扁平列表缓存
+                _所有聚类组列表.AddRange(聚类组列表);
             }
         }
 
