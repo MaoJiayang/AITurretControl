@@ -169,6 +169,7 @@ namespace IngameScript
         /// <summary>
         /// 迭代优化拦截点
         /// 使用目标跟踪器的预测功能进行迭代优化
+        /// 考虑速度合成和裁剪的实际弹速
         /// </summary>
         public Vector3D 迭代优化拦截点(
             Vector3D 炮塔位置,
@@ -182,9 +183,20 @@ namespace IngameScript
 
             for (int i = 0; i < _参数.弹道迭代次数; i++)
             {
-                // 计算当前拦截点需要的飞行时间
-                double 距离 = Vector3D.Distance(炮塔位置, 拦截点);
-                double 飞行时间 = 距离 / 弹速;
+                // 计算发射方向（归一化）
+                Vector3D 方向向量 = 拦截点 - 炮塔位置;
+                double 距离 = 方向向量.Length();
+                
+                if (距离 < 最小距离)
+                    break;
+                
+                Vector3D 发射方向 = 方向向量 / 距离;
+
+                // 计算考虑速度合成和裁剪后的实际弹速
+                double 实际弹速 = 计算实际弹速(发射方向, 弹速, 舰船速度);
+
+                // 使用实际弹速计算飞行时间
+                double 飞行时间 = 距离 / 实际弹速;
 
                 // 预测目标在未来位置（考虑启始时间偏移 + 飞行时间 + 火控更新延迟）
                 long 预测时间ms = 启始时间偏移ms + (long)(飞行时间 * 1000) + MathHelper.帧数转毫秒(跳帧);
@@ -268,6 +280,38 @@ namespace IngameScript
             Vector3D 调整量 = (目标速度 - 舰船速度) * 时间差;
 
             return 代表瞄准点 + 调整量;
+        }
+
+        #endregion
+
+        #region 私有辅助方法
+
+        /// <summary>
+        /// 计算考虑速度合成和裁剪后的实际弹速
+        /// SE游戏机制：炮弹速度 = Clamp(炮弹初速向量 + 舰船速度向量, 0, 弹速)
+        /// </summary>
+        /// <param name="发射方向">归一化的发射方向向量</param>
+        /// <param name="弹速">武器标称弹速</param>
+        /// <param name="舰船速度">本舰速度向量</param>
+        /// <returns>实际的弹速标量值</returns>
+        private double 计算实际弹速(Vector3D 发射方向, double 弹速, Vector3D 舰船速度)
+        {
+            // 1. 计算炮弹初速向量（武器发射方向 × 弹速）
+            Vector3D 炮弹初速向量 = 发射方向 * 弹速;
+
+            // 2. 与舰船速度合成
+            Vector3D 合成速度向量 = 炮弹初速向量 + 舰船速度;
+
+            // 3. 计算合成速度的模长
+            double 合成速度模长 = 合成速度向量.Length();
+
+            // 4. 裁剪到最大弹速（游戏限制）
+            if (合成速度模长 > 弹速)
+            {
+                return 弹速;
+            }
+
+            return 合成速度模长;
         }
 
         #endregion
