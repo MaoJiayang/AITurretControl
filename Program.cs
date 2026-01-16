@@ -68,7 +68,7 @@ namespace IngameScript
 
         /// <summary>主控制器（驾驶舱）- 用于获取舰船速度等信息</summary>
         private IMyShipController _主控制器;
-
+        
         /// <summary>当前火控状态</summary>
         private 火控状态 _当前状态;
 
