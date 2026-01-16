@@ -128,8 +128,6 @@ namespace IngameScript
 
             // 设置运行频率为每帧执行
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
-
-            Echo($"{系统名称} v{版本号} 启动中...");
         }
 
         #endregion
@@ -180,14 +178,14 @@ namespace IngameScript
             if (_帧计数 % _参数管理器.火控更新跳帧 == 0)
             {
                 执行火控循环(存在目标, 目标位置, 目标位置已更新);
+                显示状态信息();
             }
 
             // 每帧处理射击需求队列（不跳帧，平滑处理）
             _射击控制器?.处理射击需求();
-
             // 更新显示和性能统计
             更新性能统计();
-            显示状态信息();
+            
         }
 
         #endregion
@@ -470,7 +468,7 @@ namespace IngameScript
         private void 显示初始化状态()
         {
             _状态信息.Clear();
-            _状态信息.AppendLine($"=== {系统名称} v{版本号} ===");
+            _状态信息.AppendLine($"[=== {系统名称} v{版本号} ===]");
             _状态信息.AppendLine("状态: 初始化中...");
 
             if (!string.IsNullOrEmpty(_初始化错误信息))
@@ -487,11 +485,11 @@ namespace IngameScript
         private void 显示状态信息()
         {
             _状态信息.Clear();
-            _状态信息.AppendLine($"=== {系统名称} v{版本号} ===");
+            _状态信息.AppendLine($"[=== {系统名称} v{版本号} ===]");
 
             if (!_已初始化)
             {
-                _状态信息.AppendLine("状态: 初始化中...");
+                _状态信息.AppendLine("[状态]: 初始化中...");
                 if (!string.IsNullOrEmpty(_初始化错误信息))
                 {
                     _状态信息.AppendLine($"错误: {_初始化错误信息}");
@@ -501,7 +499,7 @@ namespace IngameScript
             }
 
             // 基础状态
-            _状态信息.AppendLine($"状态: {_当前状态} | 跳帧: {_参数管理器.火控更新跳帧}");
+            _状态信息.AppendLine($"[状态]: {_当前状态} | 跳帧: {_参数管理器.火控更新跳帧}");
             _状态信息.AppendLine($"炮塔: {_炮塔管理器?.炮塔总数 ?? 0} | 聚类: {_炮塔管理器?.聚类组总数 ?? 0} | 火炮: {_炮塔管理器?.火炮类数量 ?? 0}");
 
             // 目标信息
@@ -519,7 +517,7 @@ namespace IngameScript
 
             // 性能统计（简化显示，单位为微秒）
             double 平均时间 = _运行次数 > 0 ? _总运行时间ms / _运行次数 : 0;
-            _状态信息.AppendLine($"性能: {平均时间 * 1000:F0}us(avg)\n{_最大运行时间ms * 1000:F0}us(max)");
+            _状态信息.AppendLine($"[性能]: {平均时间 * 1000:F0}us(avg)\n{_最大运行时间ms * 1000:F0}us(max)");
             _状态信息.AppendLine($"指令: {Runtime.CurrentInstructionCount}/{Runtime.MaxInstructionCount}");
 
             Echo(_状态信息.ToString());

@@ -493,9 +493,10 @@ namespace IngameScript
             var pt = _history.Last; // 最旧记录
 
             // 计算预测时间
-            long predictionTimeCicular = p0.TimeStamp - p3_1.TimeStamp;
+            long predictionTimeCicular = Math.Max(p0.TimeStamp - p3_1.TimeStamp,1);
             // long predictionTimeLinear = p0.TimeStamp - p3_1.TimeStamp;
-            long predictionTimeLinear = p0.TimeStamp - p1.TimeStamp;
+            
+            long predictionTimeLinear = Math.Max(p0.TimeStamp - p1.TimeStamp,1);
 
             // 进行预测
             // SimpleTargetInfo predictedLinearTarget = PredictSecondOrder(predictionTimeLinear, hasVelocityAvailable, p3_1, p3_2, pt);

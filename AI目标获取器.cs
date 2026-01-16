@@ -208,7 +208,7 @@ namespace IngameScript
             {
                 // 设置目标优先级（可以通过参数配置）
                 _攻击块.TargetPriority = OffensiveCombatTargetPriority.Closest;  // 优先攻击最近目标
-                _攻击块.UpdateTargetInterval = 1;    // 目标更新间隔设为1以获得最快刷新
+                _攻击块.UpdateTargetInterval = 0;    // 目标更新间隔设为1以获得最快刷新
                 _攻击块.Enabled = true;              // 开启方块
                 
                 // 设置攻击模式为拦截模式（如果可用）
