@@ -160,7 +160,7 @@ namespace IngameScript
         {
             const double 最小位置变化 = 0.01; // 1厘米
             // _输出?.Invoke($"检查位置更新: 新位置={新位置.X:F1},{新位置.Y:F1},{新位置.Z:F1} 上次位置={_上次目标位置.X:F1},{_上次目标位置.Y:F1},{_上次目标位置.Z:F1}");
-            bool 已更新 = (新位置 - _上次目标位置).LengthSquared() > 最小位置变化 * 最小位置变化 || _上次目标位置.Equals(Vector3D.Zero);// TODO：待解决目标静止时间长不视为更新的问题
+            bool 已更新 = (新位置 - _上次目标位置).LengthSquared() > 最小位置变化 * 最小位置变化 || _上次目标位置.Equals(Vector3D.Zero) || 时间差ms > 750;// TODO：待解决目标静止时间长不视为更新的问题
             // _输出?.Invoke($"已更新：{已更新}");
             if (已更新)
             {

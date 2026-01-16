@@ -374,8 +374,8 @@ namespace IngameScript
                 double radius = (center - p0.Position).Length();
                 circlingRadius = radius; // 更新当前环绕半径
 
-                // 半径过大时视为无效圆周运动
-                if (radius > RadiusThreshold)
+                // 半径不合理时视为无效圆周运动
+                if (radius > RadiusThreshold || double.IsNaN(radius) || double.IsInfinity(radius))
                 {
                     return CircularMotionParams.Invalid;
                 }
@@ -494,9 +494,9 @@ namespace IngameScript
 
             // 计算预测时间
             long predictionTimeCicular = Math.Max(p0.TimeStamp - p3_1.TimeStamp,1);
-            // long predictionTimeLinear = p0.TimeStamp - p3_1.TimeStamp;
-            
-            long predictionTimeLinear = Math.Max(p0.TimeStamp - p1.TimeStamp,1);
+            long predictionTimeLinear = Math.Max(p0.TimeStamp - p3_1.TimeStamp,1);
+
+            // long predictionTimeLinear = Math.Max(p0.TimeStamp - p1.TimeStamp,1);
 
             // 进行预测
             // SimpleTargetInfo predictedLinearTarget = PredictSecondOrder(predictionTimeLinear, hasVelocityAvailable, p3_1, p3_2, pt);
