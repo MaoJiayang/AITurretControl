@@ -82,7 +82,7 @@ namespace IngameScript
         /// <summary>
         /// 目标历史记录最大长度 不推荐太长 会影响线性模型估算时间差
         /// </summary>
-        public int 目标历史最大长度 { get; set; } = 6;
+        public int 目标历史最大长度 { get; set; } = 4;
 
         #endregion
 

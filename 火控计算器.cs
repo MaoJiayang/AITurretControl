@@ -69,6 +69,7 @@ namespace IngameScript
             long 启始时间偏移ms
             )
         {
+            启始时间偏移ms += MathHelper.帧数转毫秒(_参数.火控更新周期) / 2;
             // 获取目标当前位置和速度,需要算上时间偏移
             var 目标信息 = _目标跟踪器.PredictFutureTargetInfo(启始时间偏移ms);
             
