@@ -27,7 +27,8 @@ namespace IngameScript
 
         /// <summary>射击需求处理器引用</summary>
         private 射击需求处理器 _需求处理器;
-
+        /// <summary>调试输出委托</summary>
+        private Action<string> _输出;
         #endregion
 
         #region 构造函数
@@ -35,12 +36,12 @@ namespace IngameScript
         /// <summary>
         /// 构造函数
         /// </summary>
-        public 射击控制器(参数管理器 参数, 炮塔管理器 炮塔管理器, 火控计算器 火控计算器)
+        public 射击控制器(参数管理器 参数, 炮塔管理器 炮塔管理器, 火控计算器 火控计算器, Action<string> 输出 = null)
         {
             _参数 = 参数;
             _炮塔管理器 = 炮塔管理器;
             _火控计算器 = 火控计算器;
-            
+            _输出 = 输出;
             // 内部创建射击需求处理器
             _需求处理器 = new 射击需求处理器(参数);
         }
@@ -113,7 +114,7 @@ namespace IngameScript
             for (int i = 0; i < 聚类组.炮塔列表.Count; i++)
             {
                 var 炮塔信息 = 聚类组.炮塔列表[i];
-                对单个炮塔开启射击(炮塔信息, 代表瞄准点, 代表位置, 弹速, 舰船速度, 目标速度);
+                对单个炮塔开启射击(炮塔信息, 代表瞄准点, 代表位置, 弹速, 舰船速度, 目标速度, _输出);
             }
         }
 
@@ -153,7 +154,8 @@ namespace IngameScript
             Vector3D 代表位置,
             double 弹速,
             Vector3D 舰船速度,
-            Vector3D 目标速度)
+            Vector3D 目标速度,
+            Action<string> 输出 = null)
         {
             if (!炮塔信息.是否可用())
                 return;
@@ -181,7 +183,7 @@ namespace IngameScript
             }
 
             // 检查目标可达性（瞄准方法内部会检查射程和俯仰）
-            bool 目标可达 = 炮塔控制器.瞄准(炮塔信息, 瞄准点);
+            bool 目标可达 = 炮塔控制器.瞄准(炮塔信息, 瞄准点, 输出);
 
             // 通过需求处理器提交射击需求
             _需求处理器.提交需求(炮塔, 目标可达);

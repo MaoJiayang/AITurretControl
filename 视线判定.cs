@@ -1,5 +1,7 @@
 using Sandbox.ModAPI.Ingame;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
@@ -17,30 +19,98 @@ namespace IngameScript
     public class 视线判定器
     {
         /// <summary>
-        /// 友方网格 - 用于检查方块是否存在
+        /// 炮塔方块位置缓存 - 存储所有已缓存炮塔占据的体素坐标
         /// </summary>
-        private IMyCubeGrid 友方网格;
+        private HashSet<Vector3I> 炮塔方块缓存;
+
+        /// <summary>
+        /// 已缓存炮塔集合 - 记录已经构建过缓存的炮塔EntityId
+        /// </summary>
+        private HashSet<long> 已缓存炮塔集合;
+
+        /// <summary>
+        /// 已知方块位置缓存 - 存储已知存在方块的体素坐标，用于减少CubeExists调用
+        /// </summary>
+        private HashSet<Vector3I> 已知方块位置缓存;
+
+        /// <summary>
+        /// 已知空位置缓存 - 存储已知不存在方块的体素坐标，用于减少CubeExists调用
+        /// </summary>
+        private HashSet<Vector3I> 已知空位置缓存;
 
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="参考方块">参考终端方块（通常是Me），从中获取所在网格</param>
-        public 视线判定器(IMyTerminalBlock 参考方块)
+        public 视线判定器()
         {
-            if (参考方块 == null)
-                throw new ArgumentNullException("参考方块不能为null");
-            
-            this.友方网格 = 参考方块.CubeGrid;
+            炮塔方块缓存 = new HashSet<Vector3I>();
+            已缓存炮塔集合 = new HashSet<long>();
+            已知方块位置缓存 = new HashSet<Vector3I>();
+            已知空位置缓存 = new HashSet<Vector3I>();
         }
 
+        /// <summary>
+        /// 判定视线是否畅通（使用3D DDA算法）
+        /// </summary>
+        /// <param name="炮塔">炮塔方块</param>
+        /// <param name="瞄准点位置">目标瞄准点的世界坐标</param>
+        /// <returns>true表示视线畅通，false表示被友方方块阻挡</returns>
+        public bool 判定视线畅通(IMyLargeTurretBase 炮塔, Vector3D 瞄准点位置, Action<string> 输出 = null)
+        {
+            Vector3I 炮塔体素位置 = 炮塔.Position;
+            Vector3I 瞄准点体素位置 = 炮塔.CubeGrid.WorldToGridInteger(瞄准点位置);
+
+            // 构建炮塔方块位置缓存
+            构建炮塔缓存(炮塔);
+
+            return 判定视线畅通(炮塔体素位置, 瞄准点体素位置, 炮塔.CubeGrid, 输出);
+        }
+
+        /// <summary>
+        /// 构建炮塔占据的所有方块位置缓存
+        /// </summary>
+        /// <param name="炮塔">炮塔方块</param>
+        private void 构建炮塔缓存(IMyLargeTurretBase 炮塔)
+        {
+            // 检查该炮塔是否已经被缓存过
+            long 炮塔ID = 炮塔.EntityId;
+            if (已缓存炮塔集合.Contains(炮塔ID))
+            {
+                // 已缓存，直接返回
+                return;
+            }
+
+            // 未缓存，添加到已缓存集合
+            已缓存炮塔集合.Add(炮塔ID);
+
+            // 获取炮塔方块的边界
+            Vector3I min = 炮塔.Min;
+            Vector3I max = 炮塔.Max;
+
+            // 遍历炮塔占据的所有体素位置并添加到缓存
+            for (int x = min.X; x <= max.X; x++)
+            {
+                for (int y = min.Y; y <= max.Y; y++)
+                {
+                    for (int z = min.Z; z <= max.Z; z++)
+                    {
+                        Vector3I 位置 = new Vector3I(x, y, z);
+                        炮塔方块缓存.Add(位置);
+                        已知方块位置缓存.Add(位置); // 同时添加到已知方块缓存
+                    }
+                }
+            }
+        }
         /// <summary>
         /// 判定视线是否畅通（使用3D DDA算法）
         /// </summary>
         /// <param name="炮塔位置">炮塔所在的体素坐标</param>
         /// <param name="瞄准点位置">目标瞄准点的体素坐标</param>
         /// <returns>true表示视线畅通，false表示被友方方块阻挡</returns>
-        public bool 判定视线畅通(Vector3I 炮塔位置, Vector3I 瞄准点位置)
+        private bool 判定视线畅通(Vector3I 炮塔位置, Vector3I 瞄准点位置, IMyCubeGrid 友方网格, Action<string> 输出 = null)
         {
+            // 输出?.Invoke($"[视线判定] 炮塔: {炮塔位置.X},{炮塔位置.Y},{炮塔位置.Z}");
+            // 输出?.Invoke($"[视线判定] 瞄准点: {瞄准点位置.X},{瞄准点位置.Y},{瞄准点位置.Z}");
             // 计算射线方向
             Vector3I 方向 = 瞄准点位置 - 炮塔位置;
             
@@ -50,7 +120,7 @@ namespace IngameScript
 
             // 当前遍历位置
             Vector3I 当前位置 = 炮塔位置;
-
+            
             // 计算每个轴的步进方向（-1, 0, 或 1）
             int 步进X = Math.Sign(方向.X);
             int 步进Y = Math.Sign(方向.Y);
@@ -74,11 +144,18 @@ namespace IngameScript
             // 获取网格边界用于边界检查
             Vector3I 网格最大值 = 友方网格.Max;
             Vector3I 网格最小值 = 友方网格.Min;
-
+            // int 循环次数 = 0;
+            
+            // 标记是否已经完全离开炮塔本体
+            bool 已离开炮塔 = false;
+            
             // DDA主循环 - 遍历射线经过的每个体素
             // 使用while循环，当射线穿出网格边界时自动停止
             while (true)
             {
+                // 输出?.Invoke($"[缓存大小] 炮塔方块缓存数量={炮塔方块缓存.Count}");
+                // 循环次数++;
+                // 输出?.Invoke($"[视线判定循环] {循环次数}: \n 当前位置={当前位置.X},{当前位置.Y},{当前位置.Z}");
                 // 检查当前位置（跳过起始位置）
                 if (当前位置 != 炮塔位置)
                 {
@@ -86,15 +163,63 @@ namespace IngameScript
                     if (当前位置 == 瞄准点位置)
                         return true;
 
-                    // 检查当前位置是否有友方方块阻挡
-                    // 使用游戏API直接检查该位置是否存在方块
-                    if (友方网格.CubeExists(当前位置))
+                    // 检查当前位置是否有友方方块（优先查缓存）
+                    bool 存在方块;
+                    if (已知方块位置缓存.Contains(当前位置))
                     {
-                        // 遇到阻挡，视线不通
-                        return false;
+                        // 缓存命中：存在方块
+                        存在方块 = true;
+                    }
+                    else if (已知空位置缓存.Contains(当前位置))
+                    {
+                        // 缓存命中：不存在方块
+                        存在方块 = false;
+                    }
+                    else
+                    {
+                        // 缓存未命中，调用API并缓存结果
+                        存在方块 = 友方网格.CubeExists(当前位置);
+                        if (存在方块)
+                        {
+                            已知方块位置缓存.Add(当前位置);
+                        }
+                        else
+                        {
+                            已知空位置缓存.Add(当前位置);
+                        }
+                    }
+
+                    if (存在方块)
+                    {
+                        // 如果还没离开炮塔，检查是否仍在炮塔体内
+                        if (!已离开炮塔)
+                        {
+                            // 判断当前方块是否是炮塔方块（查询缓存）
+                            if (炮塔方块缓存.Contains(当前位置))
+                            {
+                                // 仍在炮塔体内，继续前进
+                                // 输出?.Invoke($"[视线判定] 仍在炮塔体内，继续");
+                            }
+                            else
+                            {
+                                // 遇到非炮塔方块，说明已离开炮塔且被阻挡
+                                // 输出?.Invoke($"[视线判定] 离开炮塔后遇到阻挡方块");
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            // 已经离开炮塔，再遇到方块就是被阻挡
+                            // 输出?.Invoke($"[视线判定] 已离开炮塔，遇到阻挡方块");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // 当前位置没有方块，标记为已离开炮塔
+                        已离开炮塔 = true;
                     }
                 }
-
                 // 选择tMax最小的方向前进
                 if (tMaxX < tMaxY)
                 {
@@ -126,27 +251,16 @@ namespace IngameScript
                         tMaxZ += tDeltaZ;
                     }
                 }
-
+                
                 // 检查是否超出网格边界 - 如果超出则视线畅通（已离开友方网格）
                 if (当前位置.X < 网格最小值.X || 当前位置.X > 网格最大值.X ||
                     当前位置.Y < 网格最小值.Y || 当前位置.Y > 网格最大值.Y ||
                     当前位置.Z < 网格最小值.Z || 当前位置.Z > 网格最大值.Z)
                 {
+                    // 输出?.Invoke($"[视线判定] 超出网格边界，视线畅通");
                     return true;
                 }
             }
-        }
-
-        /// <summary>
-        /// 更新参考网格（用于动态切换检查的网格）
-        /// </summary>
-        /// <param name="新参考方块">新的参考终端方块</param>
-        public void 更新参考网格(IMyTerminalBlock 新参考方块)
-        {
-            if (新参考方块 == null)
-                throw new ArgumentNullException("新参考方块不能为null");
-            
-            this.友方网格 = 新参考方块.CubeGrid;
         }
     }
 }
