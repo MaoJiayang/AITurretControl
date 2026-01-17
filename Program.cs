@@ -215,7 +215,7 @@ namespace IngameScript
             // 阶段2：初始化AI目标获取器
             if (_目标获取器 == null)
             {
-                _目标获取器 = new AI目标获取器(GridTerminalSystem, _参数管理器, Echo);
+                _目标获取器 = new AI目标获取器(GridTerminalSystem, _参数管理器);
                 if (!_目标获取器.初始化())
                 {
                     _初始化错误信息 = "AI目标获取器初始化失败";
@@ -227,7 +227,7 @@ namespace IngameScript
             // 阶段3：初始化炮塔管理器
             if (_炮塔管理器 == null)
             {
-                _炮塔管理器 = new 炮塔管理器(GridTerminalSystem, _参数管理器, null);
+                _炮塔管理器 = new 炮塔管理器(GridTerminalSystem, _参数管理器);
                 if (!_炮塔管理器.刷新炮塔列表(_帧计数))
                 {
                     _初始化错误信息 = "未找到可用炮塔";
@@ -245,7 +245,7 @@ namespace IngameScript
             // 阶段5：初始化射击控制器（内部会创建射击需求处理器）
             if (_射击控制器 == null)
             {
-                _射击控制器 = new 射击控制器(_参数管理器, _炮塔管理器, _火控计算器, Echo);
+                _射击控制器 = new 射击控制器(_参数管理器, _炮塔管理器, _火控计算器);
                 _射击控制器.初始化();
             }
 

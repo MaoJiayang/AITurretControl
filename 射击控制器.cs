@@ -27,6 +27,10 @@ namespace IngameScript
 
         /// <summary>射击需求处理器引用</summary>
         private 射击需求处理器 _需求处理器;
+
+        /// <summary> 炮塔控制器实例</summary>
+        private 炮塔控制器 _炮塔控制器;
+
         /// <summary>调试输出委托</summary>
         private Action<string> _输出;
         #endregion
@@ -43,6 +47,7 @@ namespace IngameScript
             _火控计算器 = 火控计算器;
             _输出 = 输出;
             // 内部创建射击需求处理器
+            _炮塔控制器 = new 炮塔控制器();
             _需求处理器 = new 射击需求处理器(参数);
         }
 
@@ -183,7 +188,7 @@ namespace IngameScript
             }
 
             // 检查目标可达性（瞄准方法内部会检查射程和俯仰）
-            bool 目标可达 = 炮塔控制器.瞄准(炮塔信息, 瞄准点, 输出);
+            bool 目标可达 = _炮塔控制器.瞄准(炮塔信息, 瞄准点, _参数.开启视线判定, 输出);
 
             // 通过需求处理器提交射击需求
             _需求处理器.提交需求(炮塔, 目标可达);

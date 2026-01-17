@@ -56,6 +56,12 @@ namespace IngameScript
         /// 默认false，仅管理火炮类炮塔
         /// </summary>
         public bool 托管机枪类 { get; set; } = false;
+
+        /// <summary>
+        /// 是否开启视线判定
+        /// 默认true，检测炮塔到目标的视线是否被友方方块阻挡
+        /// </summary>
+        public bool 开启视线判定 { get; set; } = true;
         #endregion
 
         #region 制导相关参数
@@ -148,6 +154,11 @@ namespace IngameScript
                 () => 托管机枪类.ToString(),
                 v => { bool val; if (bool.TryParse(v, out val)) 托管机枪类 = val; },
                 "是否托管机枪类炮塔(非火炮类),默认false仅管理火炮");
+
+            注册参数("开启视线判定",
+                () => 开启视线判定.ToString(),
+                v => { bool val; if (bool.TryParse(v, out val)) 开启视线判定 = val; },
+                "是否开启视线判定,默认true,检测炮塔到目标的视线是否被友方方块阻挡");
 
             // ============ 目标跟踪参数 ============
             注册参数("目标历史最大长度",

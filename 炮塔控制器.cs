@@ -8,9 +8,9 @@ namespace IngameScript
     /// 炮塔控制器 - 负责单个炮塔的瞄准和开火控制
     /// 封装了炮塔的底层控制逻辑
     /// </summary>
-    public static class 炮塔控制器
+    public class 炮塔控制器
     {
-        private static 视线判定器 视线判定器实例 = new 视线判定器();
+        private 视线判定器 视线判定器实例 = new 视线判定器();
         #region 公共方法
 
         /// <summary>
@@ -20,7 +20,7 @@ namespace IngameScript
         /// <param name="炮塔信息">炮塔运行时信息</param>
         /// <param name="瞄准点">世界坐标瞄准点</param>
         /// <returns>目标是否可达（在射程内且俯仰有效）</returns>
-        public static bool 瞄准(炮塔运行时信息 炮塔信息, Vector3D 瞄准点, Action<string> 输出 = null)
+        public bool 瞄准(炮塔运行时信息 炮塔信息, Vector3D 瞄准点, bool 开启视线判定 = true, Action<string> 输出 = null)
         {
             if (炮塔信息 == null || !炮塔信息.是否可用())
                 return false;
@@ -46,10 +46,13 @@ namespace IngameScript
             {
                 return false; // 俯仰角超出限制
             }
-            bool 视线可达 = 视线判定器实例.判定视线畅通(炮塔, 瞄准点, 输出);
-            if (!视线可达)
+            if (开启视线判定)
             {
-                return false; // 视线被阻挡
+                bool 视线可达 = 视线判定器实例.判定视线畅通(炮塔, 瞄准点, 输出);
+                if (!视线可达)
+                {
+                    return false; // 视线被阻挡
+                }
             }
             // 目标可达，设置炮塔角度
             炮塔.Azimuth = (float)方位角;
@@ -68,7 +71,7 @@ namespace IngameScript
         /// <param name="瞄准点">世界坐标瞄准点</param>
         /// <param name="方位角">输出：方位角（弧度）</param>
         /// <param name="俯仰角">输出：俯仰角（弧度）</param>
-        public static void 计算瞄准角度(
+        public void 计算瞄准角度(
             IMyLargeTurretBase 炮塔,
             Vector3D 瞄准点,
             out double 方位角,
@@ -101,7 +104,7 @@ namespace IngameScript
         /// <param name="俯仰下限">俯仰下限（弧度）</param>
         /// <param name="俯仰上限">俯仰上限（弧度）</param>
         /// <returns>是否在有效范围内</returns>
-        public static bool 检查俯仰有效性(double 俯仰角, double 俯仰下限, double 俯仰上限)
+        public bool 检查俯仰有效性(double 俯仰角, double 俯仰下限, double 俯仰上限)
         {
             return 俯仰角 >= 俯仰下限 && 俯仰角 <= 俯仰上限;
         }
@@ -111,7 +114,7 @@ namespace IngameScript
         /// 注意：ShootOnce是一个耗时操作，不要频繁调用
         /// </summary>
         /// <param name="炮塔">炮塔方块</param>
-        public static void 开火(IMyLargeTurretBase 炮塔)
+        public void 开火(IMyLargeTurretBase 炮塔)
         {
             if (炮塔 != null && 炮塔.IsFunctional && 炮塔.Enabled)
             {
@@ -124,7 +127,7 @@ namespace IngameScript
         /// 确保设置的角度立即生效
         /// </summary>
         /// <param name="炮塔">炮塔方块</param>
-        public static void 同步角度(IMyLargeTurretBase 炮塔)
+        public void 同步角度(IMyLargeTurretBase 炮塔)
         {
             if (炮塔 != null)
             {
@@ -137,7 +140,7 @@ namespace IngameScript
         /// 重置炮塔到默认瞄准状态
         /// </summary>
         /// <param name="炮塔">炮塔方块</param>
-        public static void 重置(IMyLargeTurretBase 炮塔)
+        public void 重置(IMyLargeTurretBase 炮塔)
         {
             if (炮塔 != null)
             {
@@ -148,7 +151,7 @@ namespace IngameScript
         /// <summary>
         /// 检查炮塔是否可用
         /// </summary>
-        public static bool 检查可用(IMyLargeTurretBase 炮塔)
+        public bool 检查可用(IMyLargeTurretBase 炮塔)
         {
             return 炮塔 != null && 炮塔.IsFunctional;
         }
