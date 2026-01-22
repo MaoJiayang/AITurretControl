@@ -515,9 +515,12 @@ namespace IngameScript
             _circularMotionParams = CalculateCircularMotionParams(p3_1, p3_2, pt);
             SimpleTargetInfo predictedCircularTarget = PredictCircularMotion(predictionTimeCicularMs, hasVelocityAvailable, p3_1, p3_2, pt);
 
+            double predictionTimeCicular = (double)predictionTimeCicularMs * 0.001;
+            double predictionTimeLinear = (double)predictionTimeLinearMs * 0.001;
+
             // 计算各自的误差
-            linearError = (predictedLinearTarget.Position - p0.Position).Length() / predictionTimeLinearMs * 1000;
-            circularError = (predictedCircularTarget.Position - p0.Position).Length() / predictionTimeCicularMs * 1000;
+            linearError = (predictedLinearTarget.Position - p0.Position).Length() / (predictionTimeLinear * predictionTimeLinear);
+            circularError = (predictedCircularTarget.Position - p0.Position).Length() / (predictionTimeCicular * predictionTimeCicular);
             // ----- 增量学习 -----
 
             // 学习参数
@@ -537,10 +540,11 @@ namespace IngameScript
             circularWeight = circularWeight * (1 - learningRate) + targetCircularWeight * learningRate;
 
 
+
             // 计算组合预测误差
             Vector3D combinedPosition = predictedLinearTarget.Position * linearWeight +
                                     predictedCircularTarget.Position * circularWeight;
-            combinationError = (combinedPosition - p0.Position).Length() / predictionTimeCicularMs * 1000;
+            combinationError = (combinedPosition - p0.Position).Length() / (predictionTimeCicular * predictionTimeCicular);
 
             // 异常保护
             if (double.IsNaN(combinationError)) ClearHistory();

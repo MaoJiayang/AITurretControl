@@ -54,7 +54,7 @@ def 绘制误差对比(ax, df, 标题):
     ax.plot(时间, df['圆周误差'], 'g-', linewidth=1.5, label='圆周误差', alpha=0.7)
     ax.plot(时间, df['组合误差'], 'b-', linewidth=2, label='组合误差')
     ax.set_xlabel('时间 (秒)', fontsize=12)
-    ax.set_ylabel('误差 (米/秒)', fontsize=12)
+    ax.set_ylabel('误差 (米/秒^2)', fontsize=12)
     ax.set_title(f'{标题} - 预测误差对比', fontsize=14, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=10, loc='best')
