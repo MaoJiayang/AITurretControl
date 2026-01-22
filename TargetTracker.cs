@@ -524,7 +524,7 @@ namespace IngameScript
             // ----- 增量学习 -----
 
             // 学习参数
-            double learningRate = 0.5;   // 控制每次更新的影响强度
+            double learningRate = 0.8;   // 控制每次更新的影响强度
             // 对误差进行Softmax得到目标权重
             double[] LC = { linearError, circularError };
             double[] targetWeightsLC = MathHelper.Softmax(LC);
