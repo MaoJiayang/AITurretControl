@@ -1,0 +1,10 @@
+[project]
+name = "targettracker-tests"
+version = "0.1.0"
+description = "TargetTracker测试可视化工具"
+requires-python = ">=3.8"
+dependencies = [
+    "pandas>=2.0.0",
+    "matplotlib>=3.7.0",
+]
+

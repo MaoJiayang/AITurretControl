@@ -230,8 +230,8 @@ namespace IngameScript
             if (useLinear && useCircular)
             {
                 // 两种预测都需要，进行加权组合
-                linearPrediction = PredictSecondOrder(futureTimeMs, hasVelocityAvailable, p0, p1, p2);
-                // linearPrediction = PredictSecondOrder(futureTimeMs, hasVelocityAvailable, p0, pm, pt);
+                // linearPrediction = PredictSecondOrder(futureTimeMs, hasVelocityAvailable, p0, p1, p2);
+                linearPrediction = PredictSecondOrder(futureTimeMs, hasVelocityAvailable, p0, pm, pt);
                 circularPrediction = PredictCircularMotion(futureTimeMs, hasVelocityAvailable, p0, pm, pt);
 
                 Vector3D combinedPosition = linearPrediction.Position * linearWeight + circularPrediction.Position * circularWeight;
@@ -302,11 +302,20 @@ namespace IngameScript
             else
             {
                 // 通过位置计算速度和加速度
+                // vel1: p0到p1区间的平均速度（代表区间中点时刻的瞬时速度）
+                // vel2: p1到p2区间的平均速度（代表区间中点时刻的瞬时速度）
                 Vector3D vel1 = (p0.Position - p1.Position) / dt1;
                 Vector3D vel2 = (p1.Position - p2.Position) / dt2;
 
-                currentVel = vel1;
-                acceleration = (vel1 - vel2) / (dt1 + dt2) * 0.5;
+                // 加速度 = 速度变化量 / 两个速度采样点的时间间隔
+                // 两个速度采样点的时间中点分别在 (t0+t1)/2 和 (t1+t2)/2
+                // 间隔 = (dt1 + dt2) / 2
+                double accelTimeSpan = (dt1 + dt2) * 0.5;
+                acceleration = (vel1 - vel2) / accelTimeSpan;
+                
+                // vel1是区间中点时刻的速度，需要外推到p0时刻
+                // p0时刻速度 = vel1 + acceleration × (dt1/2)
+                currentVel = vel1 + acceleration * (dt1 * 0.5);
             }
 
             // 预测计算
@@ -495,24 +504,24 @@ namespace IngameScript
             var pt = _history.Last; // 最旧记录
 
             // 计算预测时间
-            long predictionTimeCicular = Math.Max(p0.TimeStamp - p3_1.TimeStamp,1);
-            long predictionTimeLinear = Math.Max(p0.TimeStamp - p3_1.TimeStamp,1);
+            long predictionTimeCicularMs = Math.Max(p0.TimeStamp - p3_1.TimeStamp,1);
+            long predictionTimeLinearMs = Math.Max(p0.TimeStamp - p3_1.TimeStamp,1);
 
-            // long predictionTimeLinear = Math.Max(p0.TimeStamp - p1.TimeStamp,1);
+            // long predictionTimeLinearms = Math.Max(p0.TimeStamp - p1.TimeStamp,1);
 
             // 进行预测
-            // SimpleTargetInfo predictedLinearTarget = PredictSecondOrder(predictionTimeLinear, hasVelocityAvailable, p3_1, p3_2, pt);
-            SimpleTargetInfo predictedLinearTarget = PredictSecondOrder(predictionTimeLinear, hasVelocityAvailable, p1, p2, p3);
+            SimpleTargetInfo predictedLinearTarget = PredictSecondOrder(predictionTimeLinearMs, hasVelocityAvailable, p3_1, p3_2, pt);
+            // SimpleTargetInfo predictedLinearTarget = PredictSecondOrder(predictionTimeLinearms, hasVelocityAvailable, p1, p2, p3);
             _circularMotionParams = CalculateCircularMotionParams(p3_1, p3_2, pt);
-            SimpleTargetInfo predictedCircularTarget = PredictCircularMotion(predictionTimeCicular, hasVelocityAvailable, p3_1, p3_2, pt);
+            SimpleTargetInfo predictedCircularTarget = PredictCircularMotion(predictionTimeCicularMs, hasVelocityAvailable, p3_1, p3_2, pt);
 
             // 计算各自的误差
-            linearError = (predictedLinearTarget.Position - p0.Position).Length() / predictionTimeLinear * 1000;
-            circularError = (predictedCircularTarget.Position - p0.Position).Length() / predictionTimeCicular * 1000;
+            linearError = (predictedLinearTarget.Position - p0.Position).Length() / predictionTimeLinearMs * 1000;
+            circularError = (predictedCircularTarget.Position - p0.Position).Length() / predictionTimeCicularMs * 1000;
             // ----- 增量学习 -----
 
             // 学习参数
-            double learningRate = 0.2;   // 控制每次更新的影响强度
+            double learningRate = 0.5;   // 控制每次更新的影响强度
             // 对误差进行Softmax得到目标权重
             double[] LC = { linearError, circularError };
             double[] targetWeightsLC = MathHelper.Softmax(LC);
@@ -531,7 +540,7 @@ namespace IngameScript
             // 计算组合预测误差
             Vector3D combinedPosition = predictedLinearTarget.Position * linearWeight +
                                     predictedCircularTarget.Position * circularWeight;
-            combinationError = (combinedPosition - p0.Position).Length() / predictionTimeCicular * 1000;
+            combinationError = (combinedPosition - p0.Position).Length() / predictionTimeCicularMs * 1000;
 
             // 异常保护
             if (double.IsNaN(combinationError)) ClearHistory();
@@ -539,9 +548,10 @@ namespace IngameScript
             // double minIndividualError = Math.Min(linearError, circularError);
             // if (combinationError > minIndividualError)
             // {
+            
             //     // linearWeight = 1.0;
             //     // circularWeight = 0.0;
-            //     combinationError = linearError;
+            //     // combinationError = linearError;
             //     if (linearError <= circularError)
             //     {
             //         linearWeight = 1.0;

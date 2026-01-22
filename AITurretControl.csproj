@@ -28,5 +28,9 @@
     <Compile Remove="参考代码\**\*.cs" />
     <!-- 仍以非编译项保留这些文件，便于查看与参考 -->
     <None Include="参考代码\**\*.cs" />
+    
+    <!-- 排除 `Tests` 测试文件夹，防止与主代码冲突 -->
+    <Compile Remove="Tests\**\*.cs" />
+    <None Include="Tests\**\*.cs" />
   </ItemGroup>
 </Project>
