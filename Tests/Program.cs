@@ -76,7 +76,7 @@ namespace TargetTrackerTests
                 var 轨迹1 = 轨迹生成器.生成直线轨迹(
                     Vector3D.Zero,
                     new Vector3D(100, 50, 30),
-                    12.0,
+                    6.0,
                     1
                 );
                 所有轨迹.Add(轨迹1);
@@ -88,7 +88,7 @@ namespace TargetTrackerTests
                     Vector3D.Zero,
                     new Vector3D(50, 0, 0),
                     new Vector3D(0, 50, 0),
-                    20.0,
+                    10.0,
                     1
                 );
                 所有轨迹.Add(轨迹2);
@@ -102,7 +102,7 @@ namespace TargetTrackerTests
                     1,
                     new Vector3D(0, 0, 1),
                     new Vector3D(1, 0, 0),
-                    20,
+                    10,
                     1
                 );
                 所有轨迹.Add(轨迹3);
@@ -116,7 +116,7 @@ namespace TargetTrackerTests
                     0.3,
                     new Vector3D(0, 0, 30),
                     new Vector3D(0, 0, 1),
-                    40.0,
+                    10.0,
                     1
                 );
                 所有轨迹.Add(轨迹4);
@@ -130,7 +130,7 @@ namespace TargetTrackerTests
                     100,
                     0.1,
                     new Vector3D(0, 1, 0),
-                    30.0,
+                    10.0,
                     1
                 );
                 所有轨迹.Add(轨迹5);

@@ -544,7 +544,7 @@ namespace IngameScript
 
             // 异常保护
             if (double.IsNaN(combinationError)) ClearHistory();
-
+            if (combinationError > 100 && _history.Count >= 4) ClearHistory();
             // double minIndividualError = Math.Min(linearError, circularError);
             // if (combinationError > minIndividualError)
             // {
