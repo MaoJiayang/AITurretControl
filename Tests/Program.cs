@@ -49,6 +49,9 @@ namespace TargetTrackerTests
         public double 组合误差;
         public double 线性权重;
         public double 圆周权重;
+        public Vector3D 圆心位置;
+        public double 圆周半径;
+        public bool 圆周有效;
     }
 
     public class 性能统计
@@ -76,7 +79,7 @@ namespace TargetTrackerTests
                 var 轨迹1 = 轨迹生成器.生成直线轨迹(
                     Vector3D.Zero,
                     new Vector3D(100, 50, 30),
-                    6.0,
+                    20.0,
                     1
                 );
                 所有轨迹.Add(轨迹1);
@@ -88,7 +91,7 @@ namespace TargetTrackerTests
                     Vector3D.Zero,
                     new Vector3D(50, 0, 0),
                     new Vector3D(0, 50, 0),
-                    10.0,
+                    20.0,
                     1
                 );
                 所有轨迹.Add(轨迹2);
@@ -102,7 +105,7 @@ namespace TargetTrackerTests
                     1,
                     new Vector3D(0, 0, 1),
                     new Vector3D(1, 0, 0),
-                    10,
+                    20,
                     1
                 );
                 所有轨迹.Add(轨迹3);
@@ -112,11 +115,11 @@ namespace TargetTrackerTests
                 Console.WriteLine("\n测试4: 螺旋运动");
                 var 轨迹4 = 轨迹生成器.生成螺旋轨迹(
                     Vector3D.Zero,
-                    300,
-                    0.3,
+                    250,
+                    1,
                     new Vector3D(0, 0, 30),
                     new Vector3D(0, 0, 1),
-                    10.0,
+                    20.0,
                     1
                 );
                 所有轨迹.Add(轨迹4);
@@ -130,7 +133,7 @@ namespace TargetTrackerTests
                     100,
                     0.1,
                     new Vector3D(0, 1, 0),
-                    10.0,
+                    20.0,
                     1
                 );
                 所有轨迹.Add(轨迹5);
@@ -258,7 +261,7 @@ namespace TargetTrackerTests
                 var 当前点 = 轨迹[i];
                 
                 // 更新tracker（只在采样点更新）
-                tracker.UpdateTarget(当前点.位置, 当前点.时间戳ms, false);
+                tracker.UpdateTarget(当前点.位置, 当前点.时间戳ms);
                 采样计数++;
 
                 // 预热期过后才进行预测测试
@@ -287,6 +290,7 @@ namespace TargetTrackerTests
                         最大位置误差 = Math.Max(最大位置误差, 位置误差);
                         有效样本数++;
 
+                        var 圆周参数 = tracker._circularMotionParams;
                         结果.预测结果.Add(new 预测结果点
                         {
                             观测时间ms = 当前点.时间戳ms,
@@ -299,7 +303,10 @@ namespace TargetTrackerTests
                             圆周误差 = tracker.circularError,
                             组合误差 = tracker.combinationError,
                             线性权重 = tracker.linearWeight,
-                            圆周权重 = tracker.circularWeight
+                            圆周权重 = tracker.circularWeight,
+                            圆心位置 = 圆周参数.IsValid ? 圆周参数.Center : Vector3D.Zero,
+                            圆周半径 = 圆周参数.IsValid ? 圆周参数.Radius : 0,
+                            圆周有效 = 圆周参数.IsValid
                         });
                     }
                 }
@@ -373,7 +380,7 @@ namespace TargetTrackerTests
                 using (var writer = new StreamWriter(文件名, false, Encoding.UTF8))
                 {
                     // 写入表头
-                    writer.WriteLine("观测时间(ms),预测时长(ms),真实X,真实Y,真实Z,预测X,预测Y,预测Z,位置误差,线性误差,圆周误差,组合误差,线性权重,圆周权重");
+                    writer.WriteLine("观测时间(ms),预测时长(ms),真实X,真实Y,真实Z,预测X,预测Y,预测Z,位置误差,线性误差,圆周误差,组合误差,线性权重,圆周权重,圆心X,圆心Y,圆心Z,圆周半径,圆周有效");
                     
                     // 写入数据
                     foreach (var 点 in 结果.预测结果)
@@ -382,7 +389,9 @@ namespace TargetTrackerTests
                             $"{点.真实位置.X:F2},{点.真实位置.Y:F2},{点.真实位置.Z:F2}," +
                             $"{点.预测位置.X:F2},{点.预测位置.Y:F2},{点.预测位置.Z:F2}," +
                             $"{点.位置误差:F2},{点.线性误差:F2},{点.圆周误差:F2},{点.组合误差:F2}," +
-                            $"{点.线性权重:F4},{点.圆周权重:F4}");
+                            $"{点.线性权重:F4},{点.圆周权重:F4}," +
+                            $"{点.圆心位置.X:F2},{点.圆心位置.Y:F2},{点.圆心位置.Z:F2}," +
+                            $"{点.圆周半径:F2},{(点.圆周有效 ? 1 : 0)}");
                     }
                 }
                 

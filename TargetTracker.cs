@@ -87,7 +87,7 @@ namespace IngameScript
         private readonly int _maxHistory;
         // 目标历史记录，最新数据放在链表头部
         private readonly CircularQueue<SimpleTargetInfo> _history;
-        private CircularMotionParams _circularMotionParams; // 圆周运动参数
+        public CircularMotionParams _circularMotionParams; // 圆周运动参数
         private int _updateCount = 0; // 更新计数器，用于记录历史记录的更新次数
 
         // 常量定义
@@ -527,7 +527,7 @@ namespace IngameScript
             double learningRate = 0.8;   // 控制每次更新的影响强度
             // 对误差进行Softmax得到目标权重
             double[] LC = { linearError, circularError };
-            double[] targetWeightsLC = MathHelper.Softmax(LC);
+            double[] targetWeightsLC = MyMathHelper.Softmax(LC);
             double targetLinearWeight = targetWeightsLC[0];
             double targetCircularWeight = targetWeightsLC[1];
             // // 基于误差比例计算目标权重

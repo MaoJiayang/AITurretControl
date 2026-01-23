@@ -434,10 +434,10 @@ namespace IngameScript
         /// <summary> 当前窗口移动平均值 = sum / Count </summary>
         public T Average => Count > 0 ? _divide(_sum, Count) : default(T);
     }
-    public class MathHelper
+    public class MyMathHelper
     {
         /// <summary>
-        /// Softmax
+        /// Softmax（最小版）
         /// </summary>
         /// <param name="errors">数组</param>
         /// <param name="temperature">温度参数，默认为1.0</param>
@@ -458,7 +458,7 @@ namespace IngameScript
             double[] expValues = new double[errors.Length];
             for (int i = 0; i < errors.Length; i++)
             {
-                expValues[i] = Math.Exp(-(errors[i] - maxError) / temperature);
+                expValues[i] = Math.Min(Math.Exp(-(errors[i] - maxError) / temperature), 1e6); // 防止溢出
             }
 
             // Step 3: 计算总和

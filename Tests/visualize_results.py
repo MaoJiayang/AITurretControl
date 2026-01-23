@@ -71,6 +71,75 @@ def 绘制权重变化(ax, df, 标题):
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=10, loc='best')
 
+def 绘制圆周半径变化(ax, df, 标题):
+    """绘制圆周半径随时间的变化"""
+    if '圆周半径' not in df.columns or '圆周有效' not in df.columns:
+        ax.text(0.5, 0.5, '无圆周数据', ha='center', va='center', 
+                transform=ax.transAxes, fontsize=14)
+        return
+    
+    df_有效 = df[df['圆周有效'] == 1]
+    if len(df_有效) == 0:
+        ax.text(0.5, 0.5, '无有效圆周运动', ha='center', va='center',
+                transform=ax.transAxes, fontsize=14)
+        return
+    
+    时间 = df_有效['观测时间(ms)'] / 1000
+    ax.plot(时间, df_有效['圆周半径'], 'purple', linewidth=2, label='圆周半径')
+    ax.set_xlabel('时间 (秒)', fontsize=12)
+    ax.set_ylabel('半径 (米)', fontsize=12)
+    ax.set_title(f'{标题} - 圆周半径变化', fontsize=14, fontweight='bold')
+    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=10)
+    
+    # 添加统计信息
+    平均半径 = df_有效['圆周半径'].mean()
+    最大半径 = df_有效['圆周半径'].max()
+    最小半径 = df_有效['圆周半径'].min()
+    ax.text(0.02, 0.98, f'平均: {平均半径:.2f}m\n最大: {最大半径:.2f}m\n最小: {最小半径:.2f}m',
+            transform=ax.transAxes, verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5),
+            fontsize=10)
+
+def 绘制圆心轨迹2D(ax, df, 标题):
+    """绘制圆心轨迹的XY平面投影"""
+    if '圆周有效' not in df.columns:
+        ax.text(0.5, 0.5, '无圆周数据', ha='center', va='center',
+                transform=ax.transAxes, fontsize=14)
+        return
+    
+    df_有效 = df[df['圆周有效'] == 1]
+    if len(df_有效) == 0:
+        ax.text(0.5, 0.5, '无有效圆周运动', ha='center', va='center',
+                transform=ax.transAxes, fontsize=14)
+        return
+    
+    # 采样以避免过于密集
+    采样间隔 = max(1, len(df_有效) // 200)
+    df_采样 = df_有效.iloc[::采样间隔]
+    
+    # 绘制圆心轨迹
+    ax.plot(df_采样['圆心X'], df_采样['圆心Y'], 'g-', linewidth=2, 
+            label='圆心轨迹', alpha=0.7)
+    
+    # 绘制真实轨迹作为对比
+    df_真实采样 = df.iloc[::采样间隔]
+    ax.plot(df_真实采样['真实X'], df_真实采样['真实Y'], 'b--', 
+            linewidth=1, label='真实轨迹', alpha=0.5)
+    
+    # 标记起点和终点
+    ax.scatter(df_采样['圆心X'].iloc[0], df_采样['圆心Y'].iloc[0],
+              c='lime', s=100, marker='^', label='圆心起点', zorder=5)
+    ax.scatter(df_采样['圆心X'].iloc[-1], df_采样['圆心Y'].iloc[-1],
+              c='darkgreen', s=100, marker='v', label='圆心终点', zorder=5)
+    
+    ax.set_xlabel('X (米)', fontsize=12)
+    ax.set_ylabel('Y (米)', fontsize=12)
+    ax.set_title(f'{标题} - 圆心轨迹 (XY投影)', fontsize=14, fontweight='bold')
+    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=10)
+    ax.axis('equal')
+
 def 绘制3D轨迹(ax, df, 标题):
     """绘制3D轨迹对比"""
     # 采样数据点（避免太密集）
@@ -81,6 +150,16 @@ def 绘制3D轨迹(ax, df, 标题):
             'b-', linewidth=2, label='真实轨迹', alpha=0.8)
     ax.plot(df_采样['预测X'], df_采样['预测Y'], df_采样['预测Z'], 
             'r--', linewidth=1.5, label='预测轨迹', alpha=0.8)
+    
+    # 绘制圆心轨迹（仅当圆周有效时）
+    if '圆周有效' in df.columns:
+        df_有效圆周 = df[df['圆周有效'] == 1].iloc[::采样间隔]
+        if len(df_有效圆周) > 0:
+            ax.plot(df_有效圆周['圆心X'], df_有效圆周['圆心Y'], df_有效圆周['圆心Z'], 
+                    'g:', linewidth=1.5, label='圆心轨迹', alpha=0.6)
+            # 绘制第一个和最后一个有效圆心
+            ax.scatter(df_有效圆周['圆心X'].iloc[0], df_有效圆周['圆心Y'].iloc[0], df_有效圆周['圆心Z'].iloc[0], 
+                      c='lime', s=50, marker='^', alpha=0.7)
     
     # 绘制起点和终点
     ax.scatter(df['真实X'].iloc[0], df['真实Y'].iloc[0], df['真实Z'].iloc[0], 
@@ -101,24 +180,32 @@ def 绘制单个测试完整分析(文件名):
     if df is None:
         return
     
-    # 创建2x2子图
-    fig = plt.figure(figsize=(16, 12))
+    # 创建2x3子图布局
+    fig = plt.figure(figsize=(20, 12))
     
     # 1. 位置误差
-    ax1 = plt.subplot(2, 2, 1)
+    ax1 = plt.subplot(2, 3, 1)
     绘制位置误差(ax1, df, 测试名)
     
     # 2. 误差对比
-    ax2 = plt.subplot(2, 2, 2)
+    ax2 = plt.subplot(2, 3, 2)
     绘制误差对比(ax2, df, 测试名)
     
     # 3. 权重变化
-    ax3 = plt.subplot(2, 2, 3)
+    ax3 = plt.subplot(2, 3, 3)
     绘制权重变化(ax3, df, 测试名)
     
-    # 4. 3D轨迹
-    ax4 = plt.subplot(2, 2, 4, projection='3d')
+    # 4. 3D轨迹（包含圆心）
+    ax4 = plt.subplot(2, 3, 4, projection='3d')
     绘制3D轨迹(ax4, df, 测试名)
+    
+    # 5. 圆周半径变化
+    ax5 = plt.subplot(2, 3, 5)
+    绘制圆周半径变化(ax5, df, 测试名)
+    
+    # 6. 预留位置（可以添加其他分析）
+    ax6 = plt.subplot(2, 3, 6)
+    绘制圆心轨迹2D(ax6, df, 测试名)
     
     plt.tight_layout()
     输出文件 = os.path.join(结果目录, f'{测试名}_分析.png')

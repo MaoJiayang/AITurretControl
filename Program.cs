@@ -172,7 +172,7 @@ namespace IngameScript
             bool 存在目标 = _目标获取器.存在有效目标;
             
             // 计算与上次目标更新的时间差（毫秒）
-            long 时间差ms = MathHelper.帧数转毫秒(_帧计数 - _上次目标更新帧);
+            long 时间差ms = MyMathHelper.帧数转毫秒(_帧计数 - _上次目标更新帧);
             // 检查目标位置是否更新（时间差>750ms时强制认为已更新）
             bool 目标位置需更新 = _目标获取器.目标位置需更新(目标位置, 时间差ms);
 
@@ -380,7 +380,7 @@ namespace IngameScript
                     else if (目标位置已更新)
                     {
                         _上次目标更新帧 = _帧计数;
-                        long 当前时间戳ms = MathHelper.帧数转毫秒(_帧计数);
+                        long 当前时间戳ms = MyMathHelper.帧数转毫秒(_帧计数);
                         _目标跟踪器.UpdateTarget(目标位置, Vector3D.Zero, 当前时间戳ms);
                         _当前目标位置 = 目标位置;
                     }
@@ -434,7 +434,7 @@ namespace IngameScript
             foreach (var 聚类组 in 本帧聚类组列表)
             {
                 // 计算时间偏移（从上次目标更新到现在）
-                long 时间偏移ms = MathHelper.帧数转毫秒(_帧计数 - _上次目标更新帧);
+                long 时间偏移ms = MyMathHelper.帧数转毫秒(_帧计数 - _上次目标更新帧);
                 
                 _射击控制器.对聚类组开启射击(聚类组, 舰船速度, 重力向量, 时间偏移ms);
                 
