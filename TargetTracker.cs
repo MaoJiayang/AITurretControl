@@ -65,6 +65,67 @@ namespace IngameScript
         }
         public static CircularMotionParams Invalid => new CircularMotionParams { IsValid = false };
     }
+
+    /// <summary>
+    /// 圆周运动参数一阶导数结构
+    /// </summary>
+    public struct CircularMotionParamsDerivative
+    {
+        public Vector3D CenterVelocity;          // 圆心速度（圆心位置的一阶导数）
+        public double RadiusChangeRate;          // 半径变化率（半径的一阶导数）
+        public double AngularAcceleration;       // 角加速度（角速度的一阶导数）
+        public Vector3D PlaneNormalChangeRate;   // 平面法向量变化率
+        public bool IsValid;
+        
+        public CircularMotionParamsDerivative(Vector3D centerVel, double radiusRate, double angularAcc, Vector3D normalRate)
+        {
+            CenterVelocity = centerVel;
+            RadiusChangeRate = radiusRate;
+            AngularAcceleration = angularAcc;
+            PlaneNormalChangeRate = normalRate;
+            IsValid = true;
+        }
+        
+        public static CircularMotionParamsDerivative Invalid => new CircularMotionParamsDerivative { IsValid = false };
+        
+        /// <summary>
+        /// 计算两个圆周运动参数之间的一阶导数
+        /// </summary>
+        /// <param name="newer">较新的圆周运动参数</param>
+        /// <param name="older">较旧的圆周运动参数</param>
+        /// <returns>圆周运动参数的一阶导数</returns>
+        public static CircularMotionParamsDerivative Calculate(CircularMotionParams newer, CircularMotionParams older)
+        {
+            // 检查有效性
+            if (!newer.IsValid || !older.IsValid)
+            {
+                return CircularMotionParamsDerivative.Invalid;
+            }
+            
+            // 计算时间间隔（秒）
+            double dt = (newer.TimeStampMs - older.TimeStampMs) * 0.001;
+            
+            // 时间间隔过小，无法计算有效导数
+            if (Math.Abs(dt) < 1e-6)
+            {
+                return CircularMotionParamsDerivative.Invalid;
+            }
+            
+            // 计算圆心速度
+            Vector3D centerVel = (newer.Center - older.Center) / dt;
+            
+            // 计算半径变化率
+            double radiusRate = (newer.Radius - older.Radius) / dt;
+            
+            // 计算角加速度
+            double angularAcc = (newer.AngularVelocity - older.AngularVelocity) / dt;
+            
+            // 计算平面法向量变化率
+            Vector3D normalRate = (newer.PlaneNormal - older.PlaneNormal) / dt;
+            
+            return new CircularMotionParamsDerivative(centerVel, radiusRate, angularAcc, normalRate);
+        }
+    }
     
     public partial class TargetTracker : MyGridProgram
     {
