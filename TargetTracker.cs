@@ -97,7 +97,7 @@ namespace IngameScript
         public static CircularMotionParamsDerivative Calculate(CircularMotionParams newer, CircularMotionParams older)
         {
             // 检查有效性
-            if (!newer.IsValid || !older.IsValid)
+            if (!newer.IsValid || !older.IsValid || newer.TimeStampMs <= older.TimeStampMs)
             {
                 return CircularMotionParamsDerivative.Invalid;
             }
@@ -150,6 +150,7 @@ namespace IngameScript
         // 目标历史记录，最新数据放在链表头部
         private readonly CircularQueue<SimpleTargetInfo> _history;
         public CircularMotionParams _circularMotionParams; // 圆周运动参数
+        private CircularMotionParamsDerivative _circularMotionDerivative; // 圆周运动参数导数（缓存）
         private CircularMotionParams _lastCircularMotionParams; // 上一次的圆周运动参数
         private int _updateCount = 0; // 更新计数器，用于记录历史记录的更新次数
 
@@ -202,6 +203,9 @@ namespace IngameScript
             
             // 计算新的圆周运动参数
             _circularMotionParams = CalculateCircularMotionParams(p0, p1, p2);
+            
+            // 计算圆周运动参数导数
+            _circularMotionDerivative = CircularMotionParamsDerivative.Calculate(_circularMotionParams, _lastCircularMotionParams);
 
         }
 
