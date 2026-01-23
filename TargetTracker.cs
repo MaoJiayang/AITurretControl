@@ -52,16 +52,17 @@ namespace IngameScript
         public double AngularVelocity;
         public Vector3D PlaneNormal;
         public bool IsValid;
+        public long TimeStampMs;
         
-        public CircularMotionParams(Vector3D center, double radius, double angularVel, Vector3D normal)
+        public CircularMotionParams(Vector3D center, double radius, double angularVel, Vector3D normal, long timeStampMs)
         {
             Center = center;
             Radius = radius;
             AngularVelocity = angularVel;
             PlaneNormal = normal;
             IsValid = true;
+            TimeStampMs = timeStampMs;
         }
-        
         public static CircularMotionParams Invalid => new CircularMotionParams { IsValid = false };
     }
     
@@ -88,6 +89,7 @@ namespace IngameScript
         // 目标历史记录，最新数据放在链表头部
         private readonly CircularQueue<SimpleTargetInfo> _history;
         public CircularMotionParams _circularMotionParams; // 圆周运动参数
+        private CircularMotionParams _lastCircularMotionParams; // 上一次的圆周运动参数
         private int _updateCount = 0; // 更新计数器，用于记录历史记录的更新次数
 
         // 常量定义
@@ -133,6 +135,11 @@ namespace IngameScript
             var p0 = _history.First;
             var p1 = _history.GetItemAt(index2);
             var p2 = _history.Last;
+            
+            // 保存上一次的圆周运动参数
+            _lastCircularMotionParams = _circularMotionParams;
+            
+            // 计算新的圆周运动参数
             _circularMotionParams = CalculateCircularMotionParams(p0, p1, p2);
 
         }
@@ -411,7 +418,7 @@ namespace IngameScript
                 // 计算运动平面法向量
                 Vector3D planeNormal = Vector3D.Normalize(cross);
 
-                return new CircularMotionParams(center, radius, angularVelocity, planeNormal);
+                return new CircularMotionParams(center, radius, angularVelocity, planeNormal, p0.TimeStamp);
             }
             catch
             {
