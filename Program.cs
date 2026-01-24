@@ -425,7 +425,7 @@ namespace IngameScript
                 重力向量 = _主控制器.GetNaturalGravity();
             }
 
-            // if(_目标跟踪器.GetHistoryCount() < 1) return;// 暂时缓解目标跟踪器历史数据不足时乱打的问题// 已经通过将AI攻击块更新间隔设置为0解决
+            if(_目标跟踪器.GetHistoryCount() < 4) return;// 暂时缓解目标跟踪器历史数据不足时乱打的问题// 已经通过将AI攻击块更新间隔设置为0解决
             
             // 获取本帧应处理的聚类组（轮询调度）
             var 本帧聚类组列表 = 获取本帧应处理的聚类组();
