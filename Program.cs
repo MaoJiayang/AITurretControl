@@ -38,7 +38,6 @@ namespace IngameScript
     public partial class Program : MyGridProgram
     {
         #region 版本信息和常量
-        private const string 版本号 = "1.0.0";
         private const string 系统名称 = "AI块火控炮塔系统";
 
         #endregion
@@ -61,6 +60,11 @@ namespace IngameScript
 
         /// <summary>射击控制器 - 负责射击模式管理（齐射/轮射）</summary>
         private 射击控制器 _射击控制器;
+
+        /// <summary>
+        /// 陀螺仪瞄准系统 - 负责轴炮瞄准控制。轴炮方向必须与驾驶舱前进方向一致
+        /// </summary>
+        private 陀螺仪瞄准系统 _陀螺仪瞄准系统;
 
         #endregion
 
@@ -249,6 +253,12 @@ namespace IngameScript
                 _射击控制器.初始化();
             }
 
+            // 阶段6：初始化陀螺仪瞄准系统
+            if (_陀螺仪瞄准系统 == null)
+            {
+                _陀螺仪瞄准系统 = new 陀螺仪瞄准系统(_参数管理器);
+                _陀螺仪瞄准系统.初始化(GridTerminalSystem);
+            }
             // 初始化完成
             _已初始化 = true;
             _当前状态 = 火控状态.待机;
@@ -520,7 +530,7 @@ namespace IngameScript
         private void 显示初始化状态()
         {
             _状态信息.Clear();
-            _状态信息.AppendLine($"[=== {系统名称} v{版本号} ===]");
+            _状态信息.AppendLine($"[=== {系统名称} v{_参数管理器.版本号} ===]");
             _状态信息.AppendLine("状态: 初始化中...");
 
             if (!string.IsNullOrEmpty(_初始化错误信息))
@@ -537,7 +547,7 @@ namespace IngameScript
         private void 显示状态信息()
         {
             _状态信息.Clear();
-            _状态信息.AppendLine($"[=== {系统名称} v{版本号} ===]");
+            _状态信息.AppendLine($"[=== {系统名称} v{_参数管理器.版本号} ===]");
 
             if (!_已初始化)
             {

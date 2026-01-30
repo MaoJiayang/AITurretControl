@@ -12,7 +12,7 @@ namespace IngameScript
     /// </summary>
     public class 参数管理器
     {
-        public string 版本号 { get; } = "1.0.0-AI火控";
+        public string 版本号 { get; } = "1.1.0-轴炮自瞄";
 
         #region 火控系统参数
 
@@ -101,6 +101,47 @@ namespace IngameScript
         /// 性能统计重置间隔(帧数)
         /// </summary>
         public int 性能统计重置间隔 { get; set; } = 600;
+        public double 常驻滚转转速 { get; set; } = 0;
+        #endregion
+
+        #region 辅助瞄准参数
+
+        /// <summary>
+        /// PID参数结构
+        /// </summary>
+        public class PID参数
+        {
+            public double P系数 { get; set; }
+            public double I系数 { get; set; }
+            public double D系数 { get; set; }
+
+            public PID参数(double p, double i, double d)
+            {
+                P系数 = p;
+                I系数 = i;
+                D系数 = d;
+            }
+        }
+
+        /// <summary>
+        /// 外环PID参数
+        /// </summary>
+        public PID参数 外环参数 { get; set; } = new PID参数(5, 0, 0);
+
+        /// <summary>
+        /// 内环PID参数
+        /// </summary>
+        public PID参数 内环参数 { get; set; } = new PID参数(21, 0.01, 0.9);
+
+        /// <summary>
+        /// 辅助瞄准更新间隔，单位：帧
+        /// </summary>
+        public int 辅助瞄准更新间隔 { get; set; } = 4;
+        public double 辅助瞄准弹速 { get; set; } = 2000;
+        /// <summary>
+        /// 角度容差（弧度）
+        /// </summary>
+        public double 角度容差 { get; set; } = Math.PI / 180.0 * 0.02; // 0.02 度
 
         #endregion
 
@@ -160,6 +201,32 @@ namespace IngameScript
                 v => { bool val; if (bool.TryParse(v, out val)) 开启视线判定 = val; },
                 "是否开启视线判定,默认true,检测炮塔到目标的视线是否被友方方块阻挡");
 
+            // ============ 辅助瞄准参数 ============
+            注册参数("外环PID3",
+                () => $"{外环参数.P系数},{外环参数.I系数},{外环参数.D系数}",
+                v => 外环参数 = 解析PID参数(v),
+                "外环PID参数(P,I,D)");
+
+            注册参数("内环PID3",
+                () => $"{内环参数.P系数},{内环参数.I系数},{内环参数.D系数}",
+                v => 内环参数 = 解析PID参数(v),
+                "内环PID参数(P,I,D)");
+
+            注册参数("辅助瞄准更新间隔",
+                () => 辅助瞄准更新间隔.ToString(),
+                v => { int val; if (int.TryParse(v, out val)) 辅助瞄准更新间隔 = val; },
+                "辅助瞄准更新间隔(帧数)");
+
+            注册参数("角度容差",
+                () => (角度容差 * 180 / Math.PI).ToString("F4"),
+                v => { double val; if (double.TryParse(v, out val)) 角度容差 = val * Math.PI / 180.0; },
+                "角度容差(度,内部以弧度存储)");
+
+            注册参数("辅助瞄准弹速",
+                () => 辅助瞄准弹速.ToString(),
+                v => { double val; if (double.TryParse(v, out val)) 辅助瞄准弹速 = val; },
+                "辅助瞄准使用的弹速(米/秒)");
+
             // ============ 目标跟踪参数 ============
             注册参数("目标历史最大长度",
                 () => 目标历史最大长度.ToString(),
@@ -190,6 +257,14 @@ namespace IngameScript
             return 时间常数;
         }
 
+        /// <summary>
+        /// 获取PID时间常数（考虑辅助瞄准更新间隔）
+        /// </summary>
+        public double 获取PID时间常数()
+        {
+            return 时间常数 * 辅助瞄准更新间隔;
+        }
+
         #endregion
 
         #region 参数辅助方法
@@ -203,6 +278,26 @@ namespace IngameScript
                 return "";
 
             return 值字符串.Trim();
+        }
+
+        /// <summary>
+        /// 解析PID参数字符串
+        /// </summary>
+        private PID参数 解析PID参数(string 参数值)
+        {
+            // 支持格式: "P,I,D"
+            var arr = 参数值.Split(',');
+            if (arr.Length == 3)
+            {
+                double p, i, d;
+                if (double.TryParse(arr[0], out p) && 
+                    double.TryParse(arr[1], out i) && 
+                    double.TryParse(arr[2], out d))
+                {
+                    return new PID参数(p, i, d);
+                }
+            }
+            return new PID参数(0, 0, 0);
         }
         
         #endregion
